@@ -69,7 +69,17 @@ public class Goal
         SimpleDateFormat dFormatter = new SimpleDateFormat("dd/MM/yyyy");
         String output = "<html><b>" + name + "</b>";
         if (set != null) output += "&emsp Set: " + dFormatter.format(set);
-        output += "&emsp Expires: " + ((expires == null) ? "Never" : dFormatter.format(expires));
+        
+        output += "&emsp Expires: ";
+        if (expires == null) output += "Never";
+        else
+        {
+            if (expires.getTime() - new Date().getTime() < 86400000)
+                output += "<font color='red'>" + dFormatter.format(expires) + "</font>";
+            else
+                output += dFormatter.format(expires);
+        }
+        
         output += "<br/>" + details + "</html>";
         return output;
     }

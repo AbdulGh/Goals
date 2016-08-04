@@ -43,7 +43,6 @@ public class Goals extends JFrame
         setTitle("Goals");
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setResizable(false);
         setPreferredSize(new Dimension(640,480));
         
         JMenuBar menuBar = new JMenuBar();
@@ -158,13 +157,8 @@ public class Goals extends JFrame
         listContainer.add(list);
         pane.add(listContainer, componentSettings);
         
-        //buttons        
-        JPanel buttonContainer = new JPanel(new GridLayout(4,1,0,5));
-        buttonContainer.setSize(new Dimension(100, 90));
-        buttonContainer.setBorder(new EmptyBorder(6, 0, 2, 0));
-        
-        JButton newG = new JButton("New");
-        //newG.setPreferredSize(buttonDimension);
+        //Menu
+        JMenuItem newG = new JMenuItem("New");
         newG.addActionListener(new ActionListener()
         {
             @Override
@@ -181,14 +175,9 @@ public class Goals extends JFrame
             }
         });
         
-        buttonContainer.add(newG);
+        JMenuItem accomplished = new JMenuItem("Finished");
         
-        JButton accomplished = new JButton("Finished");
-        accomplished.setMargin(new Insets(0, 0, 0, 0));
-        //accomplished.setPreferredSize(buttonDimension);
-        buttonContainer.add(accomplished);
-        
-        JButton edit = new JButton("Edit");
+        JMenuItem edit = new JMenuItem("Edit");
         edit.addActionListener(new ActionListener()
         {
            @Override
@@ -207,10 +196,8 @@ public class Goals extends JFrame
                 ngd.dispose();
            }
         });
-        //edit.setPreferredSize(buttonDimension);
-        buttonContainer.add(edit);
         
-        JButton del = new JButton("Delete");
+        JMenuItem del = new JMenuItem("Delete");
         del.addActionListener(new ActionListener()
         {
            @Override
@@ -219,15 +206,39 @@ public class Goals extends JFrame
                list.deleteSelectedFiles();
            }
         });
-        //del.setPreferredSize(buttonDimension);
-        buttonContainer.add(del);
         
-        componentSettings = new WGBC();
-        componentSettings.gridx = 3;
-        componentSettings.gridy = 1;
-        componentSettings.gridwidth = 1;
-        componentSettings.gridheight = 1;
-        pane.add(buttonContainer, componentSettings);
+        JPopupMenu popupMenu = new JPopupMenu();
+        popupMenu.add(newG);
+        popupMenu.add(accomplished);
+        popupMenu.add(edit);
+        popupMenu.add(del);
+        
+        list.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mousePressed(MouseEvent e)
+            {
+                if (SwingUtilities.isRightMouseButton(e))
+                {
+                    JList list = (JList)e.getSource();
+                    
+                    int selectedGoals = list.getSelectedIndices().length;
+                    if (selectedGoals < 2)
+                    {
+                        int row = list.locationToIndex(e.getPoint());
+                        list.setSelectedIndex(row);
+                    }
+                    
+                    boolean itemSelected = selectedGoals > 0;
+                    edit.setEnabled(itemSelected);
+                    accomplished.setEnabled(itemSelected);
+                    del.setEnabled(itemSelected);
+                    
+                    popupMenu.show(list, e.getX(), e.getY());
+                }
+            }
+
+        });
         
         pane.setLayout(gbLayout);
         pack();
