@@ -15,6 +15,7 @@ public class Goals extends JFrame
     GoalJList list;
     Date currentDate;
     SimpleDateFormat dformatter;
+    String currentFile;
     
     public static void main(String[] args) 
     {        
@@ -33,6 +34,7 @@ public class Goals extends JFrame
     {
         list = new GoalJList();
         currentDate = new Date();
+        currentFile = null;
         dformatter = new SimpleDateFormat("dd/MM/yyyy");
                 
         initUI();
@@ -45,25 +47,31 @@ public class Goals extends JFrame
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(640,480));
         
+        JTextArea todaysEntry = new JTextArea(5, 100);
+        todaysEntry.setLineWrap(true);
+        todaysEntry.setWrapStyleWord(true);
+        JScrollPane notesContainer = new JScrollPane(todaysEntry);
+        
+        notesContainer.setBorder(
+            BorderFactory.createTitledBorder(
+                new LineBorder(Color.GRAY),
+                "Notes for " + dformatter.format(currentDate) +":"));
+        
+        //list for goals
+        JScrollPane listContainer = new JScrollPane(list);
+        listContainer.setBorder(
+            BorderFactory.createTitledBorder(
+                new LineBorder(Color.GRAY),
+                "Ongoing goals:"));
+        
+        notesContainer.setPreferredSize(new Dimension(640, 340));
+        listContainer.setPreferredSize(new Dimension(640, 140));
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, notesContainer, listContainer);
+        split.setResizeWeight(0.6);
+        getContentPane().add(split);
+        
         JMenuBar menuBar = new JMenuBar();
         JMenu file = new JMenu("File");
-        
-        JMenuItem save = new JMenuItem("Save");
-        save.addActionListener(new ActionListener()
-        {
-           public void actionPerformed(ActionEvent e)
-           {
-                JFileChooser saveDialog = new JFileChooser();
-                saveDialog.setCurrentDirectory(new File(System.getProperty("user.dir")));
-                
-                int returnVal = saveDialog.showSaveDialog(Goals.this);
-
-                if (returnVal == JFileChooser.APPROVE_OPTION)
-                    list.saveToFile(saveDialog.getSelectedFile().getName());
-           }
-        });
-        
-        file.add(save);
         
         JMenuItem load = new JMenuItem("Load");
         load.addActionListener(new ActionListener()
@@ -84,15 +92,17 @@ public class Goals extends JFrame
                         if (!list.loadFromFile(filename))
                         {
                             JOptionPane.showMessageDialog(Goals.this,
-                            "Could not load from '" + filename + "'!",
+                            "Could not load from '" + filename + "'.",
                             "IOException",
                             JOptionPane.ERROR_MESSAGE);
                         }
+                        
+                        else currentFile = filename;
                     }
                     catch (FileNotFoundException ex)
                     {
                         JOptionPane.showMessageDialog(Goals.this,
-                            "Could not find '" + filename + "'!",
+                            "Could not find '" + filename + "'.",
                             "FileNotFoundException",
                             JOptionPane.ERROR_MESSAGE);
                     }
@@ -100,64 +110,31 @@ public class Goals extends JFrame
            }
         });
         file.add(load);
-        menuBar.add(file);
         
+        JMenuItem save = new JMenuItem("Save");
+        save.addActionListener(new SaveButtonListener());
+        file.add(save);
+        
+        JMenuItem saveas = new JMenuItem("Save as");
+        saveas.addActionListener(new ActionListener()
+        {
+           public void actionPerformed(ActionEvent e)
+           {
+                JFileChooser saveDialog = new JFileChooser();
+                saveDialog.setCurrentDirectory(new File(System.getProperty("user.dir")));
+                
+                int returnVal = saveDialog.showSaveDialog(Goals.this);
+
+                if (returnVal == JFileChooser.APPROVE_OPTION)
+                    list.saveToFile(saveDialog.getSelectedFile().getName());
+           }
+        });
+        file.add(saveas);
+        
+        menuBar.add(file);
         setJMenuBar(menuBar);
         
-        Container pane = getContentPane();
-        GridBagLayout gbLayout = new GridBagLayout();
-        pane.setLayout(gbLayout);
-        
-        class WGBC extends GridBagConstraints
-        {
-            public WGBC()
-            {
-                super();
-                this.weightx = 1;
-                this.weighty = 1;
-                this.fill = GridBagConstraints.BOTH;
-                this.insets = new Insets(3,3,3,3);
-            }
-        }
-        
-        GridBagConstraints componentSettings;
-        
-        //text entry for notes
-        JTextArea todaysEntry = new JTextArea(5, 100);
-        todaysEntry.setLineWrap(true);
-        todaysEntry.setWrapStyleWord(true);
-        JScrollPane scrollPane = new JScrollPane(todaysEntry);
-        
-        scrollPane.setBorder(
-            BorderFactory.createTitledBorder(
-                new LineBorder(Color.GRAY),
-                "Notes for " + dformatter.format(currentDate) +":"));
-        
-        componentSettings = new WGBC();
-        componentSettings.gridx = 0;
-        componentSettings.gridy = 0;
-        componentSettings.gridwidth = 4;
-        componentSettings.gridheight = 1;
-        componentSettings.ipady = 220;
-        pane.add(scrollPane, componentSettings);
-        
-        //list for goals
-        JPanel listContainer = new JPanel(new BorderLayout());
-        listContainer.setBorder(
-            BorderFactory.createTitledBorder(
-                new LineBorder(Color.GRAY),
-                "Ongoing goals:"));
-        
-        componentSettings = new WGBC();
-        componentSettings.gridx = 0;
-        componentSettings.gridy = 1;
-        componentSettings.gridwidth = 3;
-        componentSettings.gridheight = 1;
-        componentSettings.ipadx = 250;
-        listContainer.add(list);
-        pane.add(listContainer, componentSettings);
-        
-        //Menu
+        //List right click menu
         JMenuItem newG = new JMenuItem("New");
         newG.addActionListener(new ActionListener()
         {
@@ -240,7 +217,48 @@ public class Goals extends JFrame
 
         });
         
-        pane.setLayout(gbLayout);
         pack();
     }
+    
+    class SaveButtonListener implements ActionListener
+    {
+        public void actionPerformed(ActionEvent e)
+        {
+             if (currentFile == null)
+             {
+                 JOptionPane.showMessageDialog(Goals.this,
+                         "Please create a file first!",
+                         "No profile loaded",
+                         JOptionPane.ERROR_MESSAGE);
+             }
+             else if (!list.saveToFile("goals"))
+             {
+                 JOptionPane.showMessageDialog(Goals.this,
+                         "Could not save goal list.",
+                         "Error",
+                         JOptionPane.ERROR_MESSAGE);
+             }
+
+             try
+             {
+                 File outFile = new File(outFileName);
+                 outFile.createNewFile(); //does nothing if the file already exists
+                 output = new BufferedWriter(new FileWriter(outFile.getAbsoluteFile(), false));
+
+                 for (Goal x : goalList.values())
+                     output.write(x.getSaveString());
+
+                 output.close();
+
+             }
+             catch (Exception e)
+             {
+                 e.printStackTrace();
+                 return false;
+             }
+
+             return true;
+         }
+    }
 }
+

@@ -1,37 +1,49 @@
 package goals;
 
+import java.util.Map;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.io.*;
 import javax.swing.*;
-import java.awt.Font;
-
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
 
 public class GoalJList extends JList
 {
-    List<Goal> goalList;
+    Map<String, Goal> goalList;
     
     public GoalJList()
     {
-        goalList = new ArrayList();
-        setListData(goalList.toArray());
+        goalList = new HashMap<String, Goal>();
         setFont(getFont().deriveFont(Font.PLAIN));
+        refresh();
     }
     
     public void refresh()
     {
-        setListData(goalList.toArray());
+        setListData(goalList.values().toArray());
     }
     
-    public void addGoal(Goal inGoal)
+    public boolean addGoal(Goal inGoal)
     {
-        goalList.add(inGoal);
+        if (goalList.containsKey(inGoal.getName()))
+        {
+            replaceGoal confirm = new replaceGoal(goalList.get(inGoal.getName()), inGoal);
+            confirm.setVisible(true);
+            if (!confirm.shouldReplace()) return false;
+        }
+        
+        goalList.put(inGoal.getName(), inGoal);
         refresh();
+        return true;
     }
     
     public void deleteSelectedFiles()
     {
-        goalList.removeAll(getSelectedValuesList());
+        for (Goal x: (List<Goal>)getSelectedValuesList())
+            goalList.remove(x.getName());
+        
         refresh();
     }
     
@@ -51,7 +63,7 @@ public class GoalJList extends JList
             outFile.createNewFile(); //does nothing if the file already exists
             output = new BufferedWriter(new FileWriter(outFile.getAbsoluteFile(), false));
             
-            for (Goal x : goalList)
+            for (Goal x : goalList.values())
                 output.write(x.getSaveString());
             
             output.close();
@@ -77,7 +89,7 @@ public class GoalJList extends JList
         {
             while (true) readGoals.add(new Goal(reader));
         }
-        catch (EOFException e){System.out.printf("Done reading");} //this is supposed to happen
+        catch (EOFException e){} //this is supposed to happen
         catch (IOException e)
         {
             System.err.println("loadFromFile in GoalJList failed to read from the input file before EOF.");
@@ -96,8 +108,71 @@ public class GoalJList extends JList
         }
         
         if (clearList) goalList.clear();
-        goalList.addAll(readGoals);
+        
+        for (Goal x: readGoals) addGoal(x);
+        
         refresh();
         return true;
+    }
+}
+
+class replaceGoal extends JDialog
+{
+    private boolean replace;
+    
+    public replaceGoal(Goal oldG, Goal newG)
+    {
+        setModal(true);
+        replace = false;
+        setTitle("Name Already Exists");
+        setLocationRelativeTo(null);
+        
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p,BoxLayout.Y_AXIS));
+        
+        JLabel one = new JLabel("Would you like to replace:");
+        one.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        p.add(one);
+        
+        p.add (new JEditorPane("text/html", oldG.toString()));
+        
+        JLabel two = new JLabel("With:");
+        two.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        p.add(two);
+        
+        p.add (new JEditorPane("text/html", newG.toString()));
+        
+        JButton yes = new JButton("Yes"), no = new JButton("No");
+        
+        JPanel bp = new JPanel(new FlowLayout());
+        yes.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                replace = true;
+                setVisible(false);
+            }
+        });
+        bp.add(yes);
+        
+        no.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                replace = false;
+                setVisible(false);
+            }
+        });
+        bp.add(no);
+        p.add(bp);
+        
+        add(p);
+        pack();
+        setResizable(false);
+    }
+    
+    public boolean shouldReplace()
+    {
+        return replace;
     }
 }
