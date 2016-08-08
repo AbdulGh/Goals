@@ -2,7 +2,7 @@ package goals;
 
 import java.io.*;
 
-public class Goal
+public class Goal implements Comparable
 {
     private String name;
     private String details;
@@ -60,7 +60,21 @@ public class Goal
         }
         else expires = null;
     }
+    
+    public String getSaveString()
+    {
+        String output = name + '\0';
+        output += details + '\0';
+        
+        if (set != null) output += String.valueOf(set.getDays());
+        output += '\0';
 
+        if (expires != null) output += String.valueOf(expires.getDays());
+        output += '\0';
+        
+        return output;
+    }
+    
     @Override
     public String toString()
     {
@@ -81,18 +95,19 @@ public class Goal
         return output;
     }
     
-    public String getSaveString()
+    @Override
+    public int compareTo(Object o)
     {
-        String output = name + '\0';
-        output += details + '\0';
+        Goal other = (Goal)o;
         
-        if (set != null) output += String.valueOf(set.getDays());
-        output += '\0';
-
-        if (expires != null) output += String.valueOf(expires.getDays());
-        output += '\0';
+        if (expires == null)
+        {
+            if (other.getExpires() == null) return 0;
+            return 1;
+        }
+        if (other.getExpires() == null) return -1;
         
-        return output;
+        return -expires.compareTo(other.getExpires());
     }
     
     public String getName() 

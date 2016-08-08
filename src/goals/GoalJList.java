@@ -8,10 +8,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class GoalJList extends JList
 {
-    Map<String, Goal> goalList;
+    private Map<String, Goal> goalList;
     
     public GoalJList()
     {
@@ -22,7 +23,9 @@ public class GoalJList extends JList
     
     public void refresh()
     {
-        setListData(goalList.values().toArray());
+        ArrayList tlist = new ArrayList(goalList.values());
+        Collections.sort(tlist);
+        setListData(tlist.toArray());
     }
     
     public boolean addGoal(Goal inGoal)

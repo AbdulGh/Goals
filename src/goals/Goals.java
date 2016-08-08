@@ -74,35 +74,7 @@ public class Goals extends JFrame
         {
            public void actionPerformed(ActionEvent e)
            {
-                JFileChooser chooseDialog = new JFileChooser(); 
-
-                chooseDialog.setCurrentDirectory(new File(System.getProperty("user.dir")));
-                int returnVal = chooseDialog.showOpenDialog(Goals.this);
-
-                if (returnVal == JFileChooser.APPROVE_OPTION) 
-                {
-                    String filename = chooseDialog.getSelectedFile().getName();
-                    
-                    try
-                    {
-                        if (!list.loadFromFile(filename))
-                        {
-                            JOptionPane.showMessageDialog(Goals.this,
-                            "Could not load from '" + filename + "'.",
-                            "IOException",
-                            JOptionPane.ERROR_MESSAGE);
-                        }
-                        
-                        else currentFile = filename;
-                    }
-                    catch (FileNotFoundException ex)
-                    {
-                        JOptionPane.showMessageDialog(Goals.this,
-                            "Could not find '" + filename + "'.",
-                            "FileNotFoundException",
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                }
+                load();
            }
         });
         file.add(load);
@@ -258,7 +230,7 @@ public class Goals extends JFrame
             //see if we need to overwrite todays notes, navigate to cursor to correct position
             //seek to end of most recent date
             long pointer;
-            for (pointer = outFile.length() - 1; pointer >= 0; pointer--)
+            for (pointer = outFile.length() - 2; pointer >= 0; pointer--)
             {
                 raf.seek(pointer);
                 if (raf.read() == '\0') 
@@ -273,7 +245,6 @@ public class Goals extends JFrame
                 //go to the start of the date
                 for (; pointer >= 0 && raf.read() != '\0'; pointer--)
                     raf.seek(pointer);
-
                 //read the date
                 int date = raf.read() - '0';
                 char c;
@@ -323,14 +294,104 @@ public class Goals extends JFrame
             inputStream.close();
             zout.close();
             
-            //new File("goals").delete();
-            //new File("notes").delete();
+            new File("goals").delete();
+            new File("notes").delete();
             
         } 
         catch (Exception ex)
         {
             ex.printStackTrace();
         }
+    }
+    
+    public boolean load()
+    {
+        JFileChooser chooseDialog = new JFileChooser(); 
+
+        chooseDialog.setCurrentDirectory(new File(System.getProperty("user.dir")));
+        int returnVal = chooseDialog.showOpenDialog(Goals.this);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) 
+        {
+            String filename = chooseDialog.getSelectedFile().getName();
+
+            try
+            {
+                if (!list.loadFromFile(filename))
+                {
+                    JOptionPane.showMessageDialog(Goals.this,
+                    "Could not load from '" + filename + "'.",
+                    "IOException",
+                    JOptionPane.ERROR_MESSAGE);
+                }
+
+                else currentFile = filename;
+            }
+            catch (FileNotFoundException ex)
+            {
+                JOptionPane.showMessageDialog(Goals.this,
+                    "Could not find '" + filename + "'.",
+                    "FileNotFoundException",
+                    JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+        
+        File profile = new File(currentFile);
+        try
+        {
+            ZipInputStream zin = new ZipInputStream(new FileInputStream(profile));
+            
+            //extract the two files
+            int i = 2;
+            ZipEntry e = null;       
+            for (i = 2; i > 0; i--)
+            {
+                e = zin.getNextEntry();
+                if (e == null) break;
+                
+                FileOutputStream fout = new FileOutputStream(e.getName());
+                for (int c = zin.read(); c != -1; c = zin.read()) fout.write(c);
+                zin.closeEntry();
+                fout.close();
+            }
+            
+            if (i != 0 || zin.getNextEntry() != null)
+            {
+                JOptionPane.showMessageDialog(Goals.this,
+                    "This is not a valid profile.",
+                    "Invalid Profile",
+                    JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            System.err.println("Profile disappeared...");
+            e.printStackTrace();
+        }
+        catch (IOException e)
+        {
+            System.err.println("IOException reading files...");
+            e.printStackTrace();
+        }
+        
+        try
+        {
+            list.loadFromFile("goals");
+            FileInputStream fin = new FileInputStream("notes");
+            //TODO - load notes from file if necessary
+        }
+        catch (FileNotFoundException e)
+        {
+            JOptionPane.showMessageDialog(Goals.this,
+                    "This is not a valid profile.",
+                    "Invalid Profile",
+                    JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        
+        return true;
     }
 }
 
