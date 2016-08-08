@@ -1,17 +1,15 @@
 package goals;
 
-import java.util.Date;
 import java.io.*;
-import java.text.SimpleDateFormat;
 
 public class Goal
 {
     private String name;
     private String details;
-    private Date set;
-    private Date expires;
+    private ShortDate set;
+    private ShortDate expires;
     
-    public Goal(String name, String details, Date set, Date expires)
+    public Goal(String name, String details, ShortDate set, ShortDate expires)
     {
         this.name = name.replace("\0", "");
         this.details = details.replace("\0", "");
@@ -36,29 +34,29 @@ public class Goal
 
         if ((readValue = in.read()) != '\0')
         {
-            int setMills = readValue - '0';
+            int setDays = readValue - '0';
 
             while ((readValue = in.read()) != '\0')
             {
-                setMills *= 10;
-                setMills += readValue - '0';
+                setDays *= 10;
+                setDays += readValue - '0';
             }
             
-            set = new Date(setMills * 100000L);
+            set = new ShortDate(setDays);
         }
         else set = null;
         
         if ((readValue = in.read()) != '\0')
         {
-            int expireMills = readValue - '0';
+            int expireDays = readValue - '0';
 
             while ((readValue = in.read()) != '\0')
             {
-                expireMills *= 10;
-                expireMills += readValue - '0';
+                expireDays *= 10;
+                expireDays += readValue - '0';
             }
             
-            expires = new Date(expireMills * 100000L);
+            expires = new ShortDate(expireDays);
         }
         else expires = null;
     }
@@ -66,18 +64,17 @@ public class Goal
     @Override
     public String toString()
     {
-        SimpleDateFormat dFormatter = new SimpleDateFormat("dd/MM/yyyy");
         String output = "<html><b>" + name + "</b>";
-        if (set != null) output += "&emsp Set: " + dFormatter.format(set);
+        if (set != null) output += "&emsp Set: " + set;
         
         output += "&emsp Expires: ";
         if (expires == null) output += "Never";
         else
         {
-            if (expires.getTime() - new Date().getTime() < 86400000)
-                output += "<font color='red'>" + dFormatter.format(expires) + "</font>";
+            if (expires.inRange(new ShortDate(), 1))
+                output += "<font color='red'>" + expires + "</font>";
             else
-                output += dFormatter.format(expires);
+                output += expires;
         }
         
         output += "<br/>" + details + "</html>";
@@ -89,10 +86,10 @@ public class Goal
         String output = name + '\0';
         output += details + '\0';
         
-        if (set != null) output += String.valueOf(set.getTime() / 100000L);
+        if (set != null) output += String.valueOf(set.getDays());
         output += '\0';
 
-        if (expires != null) output += String.valueOf(expires.getTime() / 100000L);
+        if (expires != null) output += String.valueOf(expires.getDays());
         output += '\0';
         
         return output;
@@ -118,22 +115,22 @@ public class Goal
         this.details = details;
     }
 
-    public Date getSet() 
+    public ShortDate getSet() 
     {
         return set;
     }
 
-    public void setSet(Date set) 
+    public void setSet(ShortDate set) 
     {
         this.set = set;
     }
 
-    public Date getExpires() 
+    public ShortDate getExpires() 
     {
         return expires;
     }
 
-    public void setExpires(Date expires) 
+    public void setExpires(ShortDate expires) 
     {
         this.expires = expires;
     }

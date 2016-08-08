@@ -9,13 +9,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.zip.*;
 
-import java.util.Date;
-import java.text.SimpleDateFormat;
-
 public class Goals extends JFrame
 {
     GoalJList list;
-    SimpleDateFormat dformatter;
     JTextArea todaysEntry;
     String currentFile;
     
@@ -36,7 +32,6 @@ public class Goals extends JFrame
     {
         list = new GoalJList();
         currentFile = null;
-        dformatter = new SimpleDateFormat("dd/MM/yyyy");
                 
         initUI();
     }
@@ -56,7 +51,7 @@ public class Goals extends JFrame
         notesContainer.setBorder(
             BorderFactory.createTitledBorder(
                 new LineBorder(Color.GRAY),
-                "Notes for " + dformatter.format(new Date()) +":"));
+                "Notes for " + new ShortDate() +":"));
         
         //list for goals
         JScrollPane listContainer = new JScrollPane(list);
@@ -119,7 +114,7 @@ public class Goals extends JFrame
            {
                save();
            }
-        }
+        });
         file.add(save);
         
         JMenuItem saveas = new JMenuItem("Save as");
@@ -289,7 +284,7 @@ public class Goals extends JFrame
                 }
 
                 long t;
-                if ((t = new Date().getTime() / 100000L) != date) //add new date
+                if ((t = new ShortDate().getDays()) != date) //add new date
                 {
                     raf.seek(outFile.length());
                     raf.write(String.valueOf(t).getBytes());
@@ -298,7 +293,7 @@ public class Goals extends JFrame
             }
             else// otherwise the file was empty, add first date
             {
-                raf.write(String.valueOf(new Date().getTime() / 100000L).getBytes());
+                raf.write(String.valueOf(new ShortDate().getDays()).getBytes());
                 raf.write('\0');
             }
 
@@ -328,7 +323,7 @@ public class Goals extends JFrame
             inputStream.close();
             zout.close();
             
-            new File("goals").delete();
+            //new File("goals").delete();
             //new File("notes").delete();
             
         } 
@@ -336,9 +331,6 @@ public class Goals extends JFrame
         {
             ex.printStackTrace();
         }
-
-        
-
     }
 }
 

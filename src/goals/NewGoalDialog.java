@@ -4,8 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-import java.util.Date;
-import java.text.SimpleDateFormat;
 import java.text.ParseException;
 
 public class NewGoalDialog extends JDialog
@@ -17,20 +15,16 @@ public class NewGoalDialog extends JDialog
     private JTextField set;
     private JTextField expires;
     
-    private SimpleDateFormat dateFormat;
-    
     public NewGoalDialog(Goal old)
     {
         createdGoal = old;
         setModal(true);
-        dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         initDialog();
     }
     
     public NewGoalDialog()
     {
         setModal(true);
-        dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         initDialog();
     }
     
@@ -95,7 +89,7 @@ public class NewGoalDialog extends JDialog
         quick.gridy = 1;
         panel.add(scrollPane, quick);
         
-        set = new JTextField(dateFormat.format(new Date()), 10);
+        set = new JTextField(new ShortDate().toString(), 10);
         quick.gridy = 2;
         panel.add(set, quick);
         
@@ -109,11 +103,11 @@ public class NewGoalDialog extends JDialog
             desc.setText(createdGoal.getDetails());
             
             if (createdGoal.getSet() != null)
-                set.setText(dateFormat.format(createdGoal.getSet()));
+                set.setText(createdGoal.getSet().toString());
             else set.setText("dd/mm/yyyy");
             
             if (createdGoal.getExpires() != null)
-                set.setText(dateFormat.format(createdGoal.getExpires()));
+                set.setText(createdGoal.getExpires().toString());
         }
         
         getContentPane().add(panel);
@@ -125,11 +119,11 @@ public class NewGoalDialog extends JDialog
         @Override
         public void actionPerformed(ActionEvent e)
         {
-            Date setD, expiresD;
+            ShortDate setD, expiresD;
             
             try
             {
-                setD = dateFormat.parse(set.getText());
+                setD = new ShortDate(set.getText());
             }
             catch (ParseException p)
             {
@@ -138,7 +132,7 @@ public class NewGoalDialog extends JDialog
             
             try
             {
-                expiresD = dateFormat.parse(expires.getText());
+                expiresD = new ShortDate(expires.getText());
             }
             catch (ParseException p)
             {
