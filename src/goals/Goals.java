@@ -206,10 +206,6 @@ public class Goals extends JFrame
     {
         if (currentFile == null)
         {
-            JOptionPane.showMessageDialog(Goals.this,
-                    "Please create a file first!",
-                    "No profile loaded",
-                    JOptionPane.ERROR_MESSAGE);
             saveas();
             return;
         } else if (!list.saveToFile("goals"))
@@ -227,45 +223,23 @@ public class Goals extends JFrame
             outFile.createNewFile();
             RandomAccessFile raf = new RandomAccessFile(outFile, "rw");
 
-            //see if we need to overwrite todays notes, navigate to cursor to correct position
-            //seek to end of most recent date
-            long pointer;
-            for (pointer = outFile.length() - 2; pointer >= 0; pointer--)
+            if (outFile.length() == 0)
             {
-                raf.seek(pointer);
-                if (raf.read() == '\0') 
-                {
-                    raf.seek(--pointer);
-                    break;
-                }
+                raf.write(String.valueOf(new ShortDate().getDays()).getBytes());
+                raf.write('\0');
             }
 
-            if (pointer >= 0) 
+            else
             {
-                //go to the start of the date
-                for (; pointer >= 0 && raf.read() != '\0'; pointer--)
-                    raf.seek(pointer);
-                //read the date
-                int date = raf.read() - '0';
-                char c;
-                while ((c = (char)raf.read()) != '\0')
-                {
-                    date *= 10;
-                    date += c - '0';
-                }
-
+                raf.seek(outFile.length() - 2);
+                int lastDate = readPreviousDate(raf);
                 long t;
-                if ((t = new ShortDate().getDays()) != date) //add new date
+                if ((t = new ShortDate().getDays()) != lastDate) //add new date
                 {
                     raf.seek(outFile.length());
                     raf.write(String.valueOf(t).getBytes());
                     raf.write('\0');
                 } //otherwise we're in the right position to start writing
-            }
-            else// otherwise the file was empty, add first date
-            {
-                raf.write(String.valueOf(new ShortDate().getDays()).getBytes());
-                raf.write('\0');
             }
 
             raf.write(todaysEntry.getText().getBytes());
@@ -295,7 +269,7 @@ public class Goals extends JFrame
             zout.close();
             
             new File("goals").delete();
-            new File("notes").delete();
+            //new File("notes").delete();
             
         } 
         catch (Exception ex)
@@ -314,27 +288,7 @@ public class Goals extends JFrame
         if (returnVal == JFileChooser.APPROVE_OPTION) 
         {
             String filename = chooseDialog.getSelectedFile().getName();
-
-            try
-            {
-                if (!list.loadFromFile(filename))
-                {
-                    JOptionPane.showMessageDialog(Goals.this,
-                    "Could not load from '" + filename + "'.",
-                    "IOException",
-                    JOptionPane.ERROR_MESSAGE);
-                }
-
-                else currentFile = filename;
-            }
-            catch (FileNotFoundException ex)
-            {
-                JOptionPane.showMessageDialog(Goals.this,
-                    "Could not find '" + filename + "'.",
-                    "FileNotFoundException",
-                    JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
+            currentFile = filename;
         }
         
         File profile = new File(currentFile);
@@ -378,9 +332,23 @@ public class Goals extends JFrame
         
         try
         {
-            list.loadFromFile("goals");
-            FileInputStream fin = new FileInputStream("notes");
-            //TODO - load notes from file if necessary
+            if (!list.loadFromFile("goals")) return false;
+            File notes = new File("notes");
+            RandomAccessFile raf = new RandomAccessFile(notes, "rw");
+            raf.seek(notes.length() - 2);
+            int lastDate = readPreviousDate(raf), today = new ShortDate().getDays();
+            if (lastDate > today )
+            {
+                System.out.println(lastDate + " " + today);
+                JOptionPane.showMessageDialog(Goals.this,
+                    "You have notes from the future, something is wrong.",
+                    "Time travel",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            else if (lastDate == today)
+                todaysEntry.setText(raf.readLine());
+            
+            raf.close();
         }
         catch (FileNotFoundException e)
         {
@@ -390,8 +358,46 @@ public class Goals extends JFrame
                     JOptionPane.ERROR_MESSAGE);
             return false;
         }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+        
         
         return true;
+    }
+    
+    /**
+    * @returns the date prior to the cursor
+    */
+    public int readPreviousDate(RandomAccessFile raf) throws IOException
+    {
+        //seek to end of most recent date
+        long pointer;
+        for (pointer = raf.getFilePointer(); pointer >= 0; pointer--)
+        {
+            raf.seek(pointer);
+            if (raf.read() == '\0') 
+            {
+                raf.seek(--pointer);
+                break;
+            }
+        }
+        
+        //go to the start of the date
+        for (; pointer >= 0 && raf.read() != '\0'; pointer--)
+            raf.seek(pointer);
+        //read the date
+        int date = raf.read() - '0';
+        char c;
+        while ((c = (char)raf.read()) != '\0')
+        {
+            date *= 10;
+            date += c - '0';
+        }
+        
+        return date;
     }
 }
 
