@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 
 public class GoalJList extends JList
 {
@@ -23,7 +24,17 @@ public class GoalJList extends JList
     
     public void refresh()
     {
-        ArrayList tlist = new ArrayList(goalList.values());
+        ArrayList<Goal> tlist = new ArrayList<Goal>(goalList.values());
+        
+        //remove expired dates
+        int today = new ShortDate().getDays();
+        Iterator<Goal> it = tlist.iterator();
+        while (it.hasNext())
+        {
+            ShortDate exp = it.next().getExpires();
+            if (exp != null && exp.getDays() < today) it.remove();
+        }
+        
         Collections.sort(tlist);
         setListData(tlist.toArray());
     }
