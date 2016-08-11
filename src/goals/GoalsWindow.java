@@ -8,17 +8,16 @@ import javax.swing.border.*;
 
 public class GoalsWindow extends JFrame
 {
-    GoalJList list;
-    JTextArea todaysEntry;
-    String currentFile;
-    SaveFileManager sfm;
-    ShortDate date;
+    private GoalJList list;
+    private JTextArea todaysEntry;
+    private SaveFileManager sfm;
+    private ShortDate date;
+    private JScrollPane notesContainer;
     
     public GoalsWindow(ShortDate date)
     {
         list = new GoalJList();
         sfm = new SaveFileManager();
-        currentFile = null;
         this.date = date;
         initUI();
     }
@@ -33,12 +32,12 @@ public class GoalsWindow extends JFrame
         todaysEntry = new JTextArea(5, 100);
         todaysEntry.setLineWrap(true);
         todaysEntry.setWrapStyleWord(true);
-        JScrollPane notesContainer = new JScrollPane(todaysEntry);
+        notesContainer = new JScrollPane(todaysEntry);
         
         notesContainer.setBorder(
             BorderFactory.createTitledBorder(
                 new LineBorder(Color.GRAY),
-                "Notes for " + new ShortDate() +":"));
+                "Notes for " + date +":"));
         
         //list for goals
         JScrollPane listContainer = new JScrollPane(list);
@@ -85,6 +84,28 @@ public class GoalsWindow extends JFrame
            }
         });
         file.add(saveas);
+        
+        JMenuItem browse = new JMenuItem("Browse");
+        browse.addActionListener(new ActionListener()
+        {
+           public void actionPerformed(ActionEvent e)
+           {
+                String dateString = JOptionPane.showInputDialog(GoalsWindow.this, "Go to which date? dd/mm/yyyy");
+                if (dateString != null)
+                {
+                    try
+                    {
+                        goToDate(new ShortDate(dateString));
+                    }
+                    catch (Exception ex)
+                    {
+                        JOptionPane.showMessageDialog(GoalsWindow.this, "Please enter a date in the form dd/mm/yyyy!", 
+                                "Misformed date", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+           }
+        });
+        file.add(browse);
         
         menuBar.add(file);
         setJMenuBar(menuBar);
@@ -172,5 +193,22 @@ public class GoalsWindow extends JFrame
         });
         
         pack();
+    }
+    
+    private void refreshUI()
+    {
+        notesContainer.setBorder(
+            BorderFactory.createTitledBorder(
+                new LineBorder(Color.GRAY),
+                "Notes for " + date +":"));
+        
+        list.refresh();
+    }
+    
+    private void goToDate(ShortDate date)
+    {
+        this.date = date;
+        todaysEntry.setText(sfm.getEntryFor(date));
+        refreshUI();
     }
 }

@@ -1,14 +1,7 @@
 package goals;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
+import java.io.*;
+import java.util.zip.*;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
@@ -22,7 +15,7 @@ public class SaveFileManager
         currentFile = null;
     }
     
-    public boolean saveas(GoalJList list, String todaysEntry)
+    public boolean selectNewProfile()
     {
         JFileChooser saveDialog = new JFileChooser();
         saveDialog.setCurrentDirectory(new File(System.getProperty("user.dir")));
@@ -32,15 +25,20 @@ public class SaveFileManager
         if (returnVal == JFileChooser.APPROVE_OPTION)
         {
             currentFile = saveDialog.getSelectedFile().getName();
-            return save(list, todaysEntry);
+            return true;
         }
-        
-        return true;
+        return false;
+    }
+    
+    public boolean saveas(GoalJList list, String todaysEntry)
+    {
+        if (selectNewProfile()) return save(list, todaysEntry);
+        return false;
     }
     
     public boolean save(GoalJList list, String todaysEntry)
     {
-        if (currentFile == null) return saveas(list, todaysEntry);
+        if (currentFile == null && !selectNewProfile()) return false;
         
         todaysEntry.replace("\0", "");
         extractProfile(currentFile);
@@ -149,10 +147,54 @@ public class SaveFileManager
         return true;
     }
     
+    public String getEntryFor(ShortDate date)
+    {
+        if (currentFile == null && !selectNewProfile() || !extractProfile(currentFile)) return "";
+        
+        try
+        {
+            File notes = new File("notes");
+            RandomAccessFile raf = new RandomAccessFile(notes, "rw");
+            raf.seek(notes.length() - 2);
+            
+            int prevDate, desiredDate = date.getDays();
+            
+            while ((prevDate = readPreviousDate(raf)) >= desiredDate)
+            {
+                System.out.print("PrevDate: " + prevDate + "  Desired: " + desiredDate);
+                
+                if (prevDate == desiredDate)
+                {
+                    String entry = "";
+                    char c;
+                    while ((c = (char)raf.readChar()) != '\0') entry += c;
+                    raf.close();
+                    return entry;
+                }
+                
+                long prevEntry = raf.getFilePointer() - (int)Math.log10(prevDate) - 3;
+                
+                System.out.println("   PrevEntry: " + prevEntry);
+                
+                if (prevEntry <= 0) break;
+                raf.seek(prevEntry);
+            }
+            System.out.println(" - fin, PrevDate: " + prevDate);
+            raf.close();
+        }
+        catch (IOException e)
+        {
+            System.err.println("IOException in getEntryFor()...");
+            e.printStackTrace();
+        }
+        
+        return "";
+    }
+    
     /**
     * @returns the date prior to the cursor, while moving the cursor to the first character of the entry
     */
-    public int readPreviousDate(RandomAccessFile raf) throws IOException
+    private int readPreviousDate(RandomAccessFile raf) throws IOException
     {
         //seek to end of most recent date
         long pointer;
@@ -181,7 +223,7 @@ public class SaveFileManager
         return date;
     }
     
-    public boolean extractProfile(String fileName)
+    private boolean extractProfile(String fileName)
     {
         File profile = new File(fileName);
         
@@ -244,7 +286,7 @@ public class SaveFileManager
         return true;
     }
     
-    public boolean zipProfile(String fileName)
+    private boolean zipProfile(String fileName)
     {
         try
         {
