@@ -32,12 +32,9 @@ public class GoalsWindow extends JFrame
         todaysEntry = new JTextArea(5, 100);
         todaysEntry.setLineWrap(true);
         todaysEntry.setWrapStyleWord(true);
-        notesContainer = new JScrollPane(todaysEntry);
         
-        notesContainer.setBorder(
-            BorderFactory.createTitledBorder(
-                new LineBorder(Color.GRAY),
-                "Notes for " + date +":"));
+        notesContainer = new JScrollPane(todaysEntry);
+        notesContainer.setPreferredSize(new Dimension(640, 340));
         
         //list for goals
         JScrollPane listContainer = new JScrollPane(list);
@@ -45,9 +42,8 @@ public class GoalsWindow extends JFrame
             BorderFactory.createTitledBorder(
                 new LineBorder(Color.GRAY),
                 "Ongoing goals:"));
-        
-        notesContainer.setPreferredSize(new Dimension(640, 340));
         listContainer.setPreferredSize(new Dimension(640, 140));
+        
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, notesContainer, listContainer);
         split.setResizeWeight(0.6);
         getContentPane().add(split);
@@ -128,8 +124,6 @@ public class GoalsWindow extends JFrame
             }
         });
         
-        JMenuItem accomplished = new JMenuItem("Finished");
-        
         JMenuItem edit = new JMenuItem("Edit");
         edit.addActionListener(new ActionListener()
         {
@@ -150,7 +144,7 @@ public class GoalsWindow extends JFrame
            }
         });
         
-        JMenuItem del = new JMenuItem("Delete");
+        JMenuItem del = new JMenuItem("Remove");
         del.addActionListener(new ActionListener()
         {
            @Override
@@ -162,7 +156,6 @@ public class GoalsWindow extends JFrame
         
         JPopupMenu popupMenu = new JPopupMenu();
         popupMenu.add(newG);
-        popupMenu.add(accomplished);
         popupMenu.add(edit);
         popupMenu.add(del);
         
@@ -184,7 +177,6 @@ public class GoalsWindow extends JFrame
                     
                     boolean itemSelected = selectedGoals > 0;
                     edit.setEnabled(itemSelected);
-                    accomplished.setEnabled(itemSelected);
                     del.setEnabled(itemSelected);
                     
                     popupMenu.show(list, e.getX(), e.getY());
@@ -192,6 +184,7 @@ public class GoalsWindow extends JFrame
             }
         });
         
+        refreshUI();
         pack();
     }
     
@@ -203,6 +196,8 @@ public class GoalsWindow extends JFrame
                 "Notes for " + date +":"));
         
         list.refresh();
+        
+        todaysEntry.setEditable(date.equals(new ShortDate()));
     }
     
     private void goToDate(ShortDate date)

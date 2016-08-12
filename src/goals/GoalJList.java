@@ -14,11 +14,13 @@ import java.util.Iterator;
 public class GoalJList extends JList
 {
     private Map<String, Goal> goalList;
+    private String todaysEdits;
     
     public GoalJList()
     {
         goalList = new HashMap<String, Goal>();
         setFont(getFont().deriveFont(Font.PLAIN));
+        todaysEdits = "";
         refresh();
     }
     
@@ -48,6 +50,7 @@ public class GoalJList extends JList
             if (!confirm.shouldReplace()) return false;
         }
         
+        todaysEdits = "+" + inGoal.getName() + '\0' + todaysEdits;
         goalList.put(inGoal.getName(), inGoal);
         refresh();
         return true;
@@ -56,18 +59,21 @@ public class GoalJList extends JList
     public void deleteSelectedFiles()
     {
         for (Goal x: (List<Goal>)getSelectedValuesList())
+        {
+            todaysEdits += "-" + x.getSaveString();
             goalList.remove(x.getName());
+        }
         
         refresh();
     }
     
-    public void deleteGoal(Goal remove)
+    public void deleteGoal(Goal x)
     {
-        goalList.remove(remove);
-        refresh();
+        todaysEdits += "-" + x.getSaveString();
+        goalList.remove(x.getName());
     }
     
-    public boolean saveToFile(String outFileName)
+    public boolean saveGoalsToFile(String outFileName)
     {
         BufferedWriter output;
         
@@ -92,9 +98,9 @@ public class GoalJList extends JList
         return true;
     }
     
-    public boolean loadFromFile(String inFileName)throws FileNotFoundException {return loadFromFile(inFileName, true);} 
+    public boolean loadGoalsFromFile(String inFileName)throws FileNotFoundException {return loadGoalsFromFile(inFileName, true);} 
     
-    public boolean loadFromFile(String inFileName, boolean clearList) throws FileNotFoundException
+    public boolean loadGoalsFromFile(String inFileName, boolean clearList) throws FileNotFoundException
     {
         BufferedReader reader = new BufferedReader(new FileReader(inFileName));
         List<Goal> readGoals = new ArrayList<Goal>();

@@ -43,7 +43,7 @@ public class SaveFileManager
         todaysEntry.replace("\0", "");
         extractProfile(currentFile);
         
-        if (!list.saveToFile("goals"))
+        if (!list.saveGoalsToFile("goals"))
         {
             JOptionPane.showMessageDialog(null,
                     "Could not save goal list.",
@@ -106,30 +106,12 @@ public class SaveFileManager
         
         try
         {
-            if (!list.loadFromFile("goals")) return false;
-            File notes = new File("notes");
+            if (!list.loadGoalsFromFile("goals")) return false;
+            todaysEntry.setText(getEntryFor(new ShortDate()));
             
-            if (notes.length() != 0)
-            {
-                RandomAccessFile raf = new RandomAccessFile(notes, "rw");
-                raf.seek(notes.length() - 2);
-                int lastDate = readPreviousDate(raf), today = new ShortDate().getDays();
-                if (lastDate > today )
-                {
-                    System.out.println(lastDate + " " + today);
-                    JOptionPane.showMessageDialog(null,
-                        "You have notes from the future, something is wrong.",
-                        "Time travel",
-                        JOptionPane.ERROR_MESSAGE);
-                }
-                else if (lastDate == today)
-                    todaysEntry.setText(raf.readLine());
-
-                raf.close();
-            }
             
             new File("goals").delete();
-            notes.delete();
+            new File("notes").delete();
         }
         catch (FileNotFoundException e)
         {
@@ -149,6 +131,12 @@ public class SaveFileManager
     
     public String getEntryFor(ShortDate date)
     {
+        return getEntryFor(date.getDays());
+    }
+    
+    
+    public String getEntryFor(int desiredDate)
+    {
         if (currentFile == null && !selectNewProfile() || !extractProfile(currentFile)) return "";
         
         try
@@ -157,29 +145,24 @@ public class SaveFileManager
             RandomAccessFile raf = new RandomAccessFile(notes, "rw");
             raf.seek(notes.length() - 2);
             
-            int prevDate, desiredDate = date.getDays();
+            int prevDate;
             
             while ((prevDate = readPreviousDate(raf)) >= desiredDate)
-            {
-                System.out.print("PrevDate: " + prevDate + "  Desired: " + desiredDate);
-                
+            {   
                 if (prevDate == desiredDate)
                 {
                     String entry = "";
                     char c;
-                    while ((c = (char)raf.readChar()) != '\0') entry += c;
+                    while ((c = (char)raf.read()) != '\0') entry += c;
                     raf.close();
                     return entry;
                 }
                 
-                long prevEntry = raf.getFilePointer() - (int)Math.log10(prevDate) - 3;
-                
-                System.out.println("   PrevEntry: " + prevEntry);
+                long prevEntry = raf.getFilePointer() - (int)Math.log10(prevDate) - 4;
                 
                 if (prevEntry <= 0) break;
                 raf.seek(prevEntry);
             }
-            System.out.println(" - fin, PrevDate: " + prevDate);
             raf.close();
         }
         catch (IOException e)
