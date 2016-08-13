@@ -20,7 +20,7 @@ public class GoalJList extends JList
     {
         goalList = new HashMap<String, Goal>();
         setFont(getFont().deriveFont(Font.PLAIN));
-        todaysEdits = "";
+        todaysEdits = String.valueOf(new ShortDate().getDays()) + '\0';
         refresh();
     }
     

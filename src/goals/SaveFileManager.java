@@ -66,7 +66,7 @@ public class SaveFileManager
             else
             {
                 raf.seek(outFile.length() - 2);
-                int lastDate = readPreviousDate(raf);
+                int lastDate = goToStartOfDate(raf);
                 long t;
                 if ((t = new ShortDate().getDays()) != lastDate) //add new date
                 {
@@ -147,7 +147,7 @@ public class SaveFileManager
             
             int prevDate;
             
-            while ((prevDate = readPreviousDate(raf)) >= desiredDate)
+            while ((prevDate = goToStartOfDate(raf)) >= desiredDate)
             {   
                 if (prevDate == desiredDate)
                 {
@@ -177,7 +177,7 @@ public class SaveFileManager
     /**
     * @returns the date prior to the cursor, while moving the cursor to the first character of the entry
     */
-    private int readPreviousDate(RandomAccessFile raf) throws IOException
+    private int goToStartOfDate(RandomAccessFile raf) throws IOException
     {
         //seek to end of most recent date
         long pointer;
