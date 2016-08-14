@@ -4,34 +4,32 @@ import java.io.*;
 
 public class GoalHistoryManager
 {
+    private static final char recordsep = (char)30;
+    private static final char unitsep = (char)31;
+    
     public int goToStartOfDate(RandomAccessFile raf) throws IOException
     {
         long pointer = raf.getFilePointer();
-        boolean dateFound = false;
         
-        while (!dateFound && pointer >= 0)
+        //seek to the start of the last date
+        while ((char)raf.read() != recordsep && pointer-- > 0)
         {
-            while (raf.read() != '\0') raf.seek(--pointer);
-
-            if (Character.isDigit((char)raf.read()))
-            {
-                raf.seek(pointer + 1);
-                dateFound = true;
-            }
-            
-            else pointer--;
+            raf.seek(pointer);
+            if (pointer == 0) break;
         }
-        
-        if (pointer < 0) throw new EOFException();
         
         int date = raf.read() - '0';
+        
         int nextDigit;
-        while ((nextDigit = raf.read() - '0') != '\0')
+        while ((nextDigit = raf.read()) != unitsep)
         {
+            if (nextDigit == -1) throw new EOFException();
+            
             date *= 10;
-            date += nextDigit;
+            date += nextDigit - '0';
         }
         
+        System.out.println(date);
         return date;
     }
 }

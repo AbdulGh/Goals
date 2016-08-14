@@ -1,7 +1,7 @@
 package goals;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.HashMap;
 import java.io.*;
 import javax.swing.*;
@@ -9,18 +9,24 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 
 public class GoalJList extends JList
 {
     private Map<String, Goal> goalList;
-    private String todaysEdits;
+    
+    private List<String> todaysAdditions;
+    private List<Goal> todaysRemovals;
+    
+    private static final char unitsep = (char)31;
     
     public GoalJList()
     {
         goalList = new HashMap<String, Goal>();
+        
+        todaysAdditions = new ArrayList<String>();
+        todaysRemovals = new ArrayList<Goal>();
+        
         setFont(getFont().deriveFont(Font.PLAIN));
-        todaysEdits = String.valueOf(new ShortDate().getDays()) + '\0';
         refresh();
     }
     
@@ -30,11 +36,14 @@ public class GoalJList extends JList
         
         //remove expired dates
         int today = new ShortDate().getDays();
-        Iterator<Goal> it = tlist.iterator();
-        while (it.hasNext())
+        ArrayList old = new ArrayList<Goal>();
+        
+        for (Map.Entry<String, Goal> e: goalList.entrySet())
         {
-            ShortDate exp = it.next().getExpires();
-            if (exp != null && exp.getDays() < today) it.remove();
+            Goal x = e.getValue();
+            ShortDate exp = x.getExpires();
+            if (exp != null && exp.getDays() < today)
+                old.add(x);
         }
         
         Collections.sort(tlist);
@@ -50,7 +59,7 @@ public class GoalJList extends JList
             if (!confirm.shouldReplace()) return false;
         }
         
-        todaysEdits = "+" + inGoal.getName() + '\0' + todaysEdits;
+        todaysAdditions.add(inGoal.getName());
         goalList.put(inGoal.getName(), inGoal);
         refresh();
         return true;
@@ -58,18 +67,20 @@ public class GoalJList extends JList
     
     public void deleteSelectedFiles()
     {
-        for (Goal x: (List<Goal>)getSelectedValuesList())
-        {
-            todaysEdits += "-" + x.getSaveString();
-            goalList.remove(x.getName());
-        }
-        
+        deleteAll((List<Goal>)getSelectedValuesList());
+    }
+    
+    public void deleteAll(List<Goal> old)
+    {
+        for (Goal x : old) deleteGoal(x);
         refresh();
     }
     
     public void deleteGoal(Goal x)
     {
-        todaysEdits += "-" + x.getSaveString();
+        if (todaysAdditions.contains(x.getName()))
+            todaysAdditions.remove(x.getName());
+        else todaysRemovals.add(x);
         goalList.remove(x.getName());
     }
     
@@ -107,31 +118,82 @@ public class GoalJList extends JList
         
         try
         {
-            while (true) readGoals.add(new Goal(reader));
-        }
-        catch (EOFException e){} //this is supposed to happen
-        catch (IOException e)
-        {
-            System.err.println("loadFromFile in GoalJList failed to read from the input file before EOF.");
-            e.printStackTrace();
-            return false;
-        }
-        
-        try
-        {
+            Goal newGoal = new Goal();
+            while (newGoal.read(reader))
+            {
+                readGoals.add(newGoal);
+                newGoal = new Goal();
+            }
+            
             reader.close();
         }
         catch (IOException e)
         {
-            System.err.println("loadFromFile in GoalJList could not close the reader.");
             e.printStackTrace();
         }
         
         if (clearList) goalList.clear();
-        
         for (Goal x: readGoals) addGoal(x);
         
         refresh();
+        return true;
+    }
+    
+    public String getEdits()
+    {
+        String todaysEdits = "";
+        
+        for (String x: todaysAdditions) todaysEdits += x + unitsep;
+        todaysEdits += "\0"; //used to seperate additions and removals
+        
+        if (!todaysRemovals.isEmpty())
+        {
+            todaysEdits += todaysRemovals.get(0).getSaveString();
+            
+            for (int i = 1; i < todaysRemovals.size(); i++)
+                todaysEdits += unitsep + todaysRemovals.get(i).getSaveString();
+        }
+        
+        return todaysEdits;
+    }
+    
+    public boolean loadEditsFromFile(String filename) throws FileNotFoundException
+    {
+        File inFile = new File(filename);
+        if (!inFile.exists()) throw new FileNotFoundException();
+        
+        FileReader fr = new FileReader(inFile);
+        
+        int i;
+        String readAddition = "";
+        try
+        {
+            //read additions
+            todaysAdditions.clear();
+            while ((i = fr.read()) != '\0')
+            {
+                if (i == -1) return false;
+
+                if (i == unitsep)
+                {
+                    todaysAdditions.add(readAddition);
+                    readAddition = "";
+                }
+                else readAddition += (char)i;
+            }
+
+            todaysRemovals.clear();
+            Goal newGoal = new Goal();
+            while (newGoal.read(fr))
+            {
+                todaysRemovals.add(newGoal);
+                newGoal = new Goal();
+            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
         return true;
     }
 }

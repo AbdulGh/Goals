@@ -8,35 +8,43 @@ public class Goal implements Comparable
     private String details;
     private ShortDate set;
     private ShortDate expires;
+
+    private static final char unitsep = (char)31;
+    
+    public Goal()
+    {
+        name = details = null;
+        set = expires = null;
+    }
     
     public Goal(String name, String details, ShortDate set, ShortDate expires)
     {
-        this.name = name.replace("\0", "");
-        this.details = details.replace("\0", "");
+        this.name = name.replaceAll("[\030\031]", "");
+        this.details = details.replaceAll("[\030\031]", "");
         this.set = set;
         this.expires = expires;
     }
     
-    public Goal(BufferedReader in) throws IOException, EOFException
+    public boolean read(Reader in) throws IOException, EOFException
     {
         int readValue = in.read();
-        if (readValue == -1) throw new EOFException();
+        if (readValue == -1) return false;
         
-        if (readValue == 0) name = "";
+        if (readValue == unitsep) name = "";
         else
         {
             name = Character.toString((char)readValue);
-            while ((readValue = in.read()) != '\0') name += (char)readValue;
+            while ((readValue = in.read()) != unitsep) name += (char)readValue;
         }
         
         details = "";
-        while ((readValue = in.read()) != '\0') details += (char)readValue;
+        while ((readValue = in.read()) != unitsep) details += (char)readValue;
 
-        if ((readValue = in.read()) != '\0')
+        if ((readValue = in.read()) != unitsep)
         {
             int setDays = readValue - '0';
 
-            while ((readValue = in.read()) != '\0')
+            while ((readValue = in.read()) != unitsep)
             {
                 setDays *= 10;
                 setDays += readValue - '0';
@@ -46,11 +54,11 @@ public class Goal implements Comparable
         }
         else set = null;
         
-        if ((readValue = in.read()) != '\0')
+        if ((readValue = in.read()) != unitsep)
         {
             int expireDays = readValue - '0';
 
-            while ((readValue = in.read()) != '\0')
+            while ((readValue = in.read()) != unitsep)
             {
                 expireDays *= 10;
                 expireDays += readValue - '0';
@@ -59,18 +67,20 @@ public class Goal implements Comparable
             expires = new ShortDate(expireDays);
         }
         else expires = null;
+        
+        return true;
     }
     
     public String getSaveString()
     {
-        String output = name + '\0';
-        output += details + '\0';
+        String output = name + unitsep;
+        output += details + unitsep;
         
         if (set != null) output += String.valueOf(set.getDays());
-        output += '\0';
+        output += unitsep;
 
         if (expires != null) output += String.valueOf(expires.getDays());
-        output += '\0';
+        output += unitsep;
         
         return output;
     }
@@ -148,5 +158,11 @@ public class Goal implements Comparable
     public void setExpires(ShortDate expires) 
     {
         this.expires = expires;
+    }
+    
+    @Override
+    public boolean equals(Object o)
+    {
+        return ((Goal)o).getName().equals(name);
     }
 }
