@@ -109,7 +109,6 @@ public class SaveFileManager
                     raf.seek(outFile.length());
                     raf.write(String.valueOf(today).getBytes());
                     raf.write(unitsep);
-                    System.out.println("Meme!");
                 }
             }
             
@@ -142,10 +141,15 @@ public class SaveFileManager
         
         try
         {
-            if (!list.loadGoalsFromFile("goals")
-                || !list.loadEditsFromFile("ghistory")) return false;
+            if (!list.loadGoalsFromFile("goals")) return false;
             
-            todaysEntry.setText(getEntryFor(new ShortDate()));
+            
+            int today = new ShortDate().getDays();
+            String editString = GHM.getEditStringFor(today, "ghistory");
+            if (!list.loadEditsFromString(editString)) return false;
+            
+            
+            todaysEntry.setText(getEntryFor(today));
             
             deleteSaveFiles();
         }
@@ -157,15 +161,13 @@ public class SaveFileManager
                     JOptionPane.ERROR_MESSAGE);
             return false;
         }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
        
         return true;
     }
-    
-    public String getEntryFor(ShortDate date)
-    {
-        return getEntryFor(date.getDays());
-    }
-    
     
     public String getEntryFor(int desiredDate)
     {

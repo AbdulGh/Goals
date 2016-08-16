@@ -157,12 +157,9 @@ public class GoalJList extends JList
         return todaysEdits;
     }
     
-    public boolean loadEditsFromFile(String filename) throws FileNotFoundException
+    public boolean loadEditsFromString(String inString) throws FileNotFoundException
     {
-        File inFile = new File(filename);
-        if (!inFile.exists()) throw new FileNotFoundException();
-        
-        FileReader fr = new FileReader(inFile);
+        StringReader sr = new StringReader(inString);
         
         int i;
         String readAddition = "";
@@ -170,7 +167,7 @@ public class GoalJList extends JList
         {
             //read additions
             todaysAdditions.clear();
-            while ((i = fr.read()) != '\0')
+            while ((i = sr.read()) != '\0')
             {
                 if (i == -1) return false;
 
@@ -184,7 +181,7 @@ public class GoalJList extends JList
 
             todaysRemovals.clear();
             Goal newGoal = new Goal();
-            while (newGoal.read(fr))
+            while (newGoal.read(sr))
             {
                 todaysRemovals.add(newGoal);
                 newGoal = new Goal();
