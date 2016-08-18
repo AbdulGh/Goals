@@ -1,13 +1,16 @@
 package goals;
 
 import java.io.*;
+import java.util.ArrayList;
 
 public class GoalHistoryManager
 {
     private static final char recordsep = (char)30;
     private static final char unitsep = (char)31;
     
-    public int goToStartOfDate(RandomAccessFile raf) throws IOException
+    private GoalHistoryManager(){}
+    
+    public static int goToStartOfDate(RandomAccessFile raf) throws IOException
     {
         long pointer = raf.getFilePointer();
         
@@ -31,7 +34,7 @@ public class GoalHistoryManager
         return date;
     }
     
-    public String getEditStringFor(int date, String filename) throws IOException
+    public static String getEditStringFor(int date, String filename) throws IOException
     {
         File inFile = new File(filename);
         RandomAccessFile raf = new RandomAccessFile(inFile, "r");
@@ -52,4 +55,10 @@ public class GoalHistoryManager
         while ((c = (char)raf.read()) != recordsep) editString += c;
         return editString;
     }
+    
+    public static boolean takeGoalListTo(ArrayList<Goal> todaysGoals, int date, RandomAccessFile raf)
+    {
+        return true;
+    }
+    
 }

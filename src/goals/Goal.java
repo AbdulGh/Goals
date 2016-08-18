@@ -8,7 +8,8 @@ public class Goal implements Comparable
     private String details;
     private ShortDate set;
     private ShortDate expires;
-
+    
+    private static final char recordsep = (char)30;
     private static final char unitsep = (char)31;
     
     public Goal()
@@ -30,6 +31,7 @@ public class Goal implements Comparable
         int readValue = in.read();
         if (readValue == -1) return false;
         
+        if (readValue == recordsep) return false;
         if (readValue == unitsep) name = "";
         else
         {

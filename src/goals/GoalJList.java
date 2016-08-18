@@ -9,10 +9,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 
 public class GoalJList extends JList
 {
     private Map<String, Goal> goalList;
+    
     
     private List<String> todaysAdditions;
     private List<Goal> todaysRemovals;
@@ -72,16 +74,27 @@ public class GoalJList extends JList
     
     public void deleteAll(List<Goal> old)
     {
-        for (Goal x : old) deleteGoal(x);
+        Iterator<Goal> it = old.iterator();
+        while (it.hasNext()) deleteGoal(it.next());
         refresh();
+    }
+    
+    public void setDispList(List<Goal> newList)
+    {
+        setListData(newList.toArray());
     }
     
     public void deleteGoal(Goal x)
     {
         if (todaysAdditions.contains(x.getName()))
             todaysAdditions.remove(x.getName());
-        else todaysRemovals.add(x);
-        goalList.remove(x.getName());
+        else if (goalList.remove(x.getName()) != null) todaysRemovals.add(x);
+        
+    }
+    
+    public Goal[] getGoals()
+    {
+        return (Goal[])goalList.values().toArray();
     }
     
     public boolean saveGoalsToFile(String outFileName)
@@ -113,7 +126,7 @@ public class GoalJList extends JList
     
     public boolean loadGoalsFromFile(String inFileName, boolean clearList) throws FileNotFoundException
     {
-        BufferedReader reader = new BufferedReader(new FileReader(inFileName));
+        FileReader reader = new FileReader(inFileName);
         List<Goal> readGoals = new ArrayList<Goal>();
         
         try

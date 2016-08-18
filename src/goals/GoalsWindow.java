@@ -203,7 +203,7 @@ public class GoalsWindow extends JFrame
     private void goToDate(ShortDate date)
     {
         this.date = date;
-        todaysEntry.setText(sfm.getEntryFor(date));
+        todaysEntry.setText(sfm.getEntryFor(date.getDays()));
         refreshUI();
     }
 }

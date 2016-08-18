@@ -2,6 +2,8 @@ package goals;
 
 import java.io.*;
 import java.util.zip.*;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
@@ -9,7 +11,6 @@ import javax.swing.JTextArea;
 public class SaveFileManager
 {
     private String currentFile;
-    private GoalHistoryManager GHM;
         
     private static final char recordsep = (char)30;
     private static final char unitsep = (char)31;
@@ -17,7 +18,6 @@ public class SaveFileManager
     public SaveFileManager()
     {
         currentFile = null;
-        GHM = new GoalHistoryManager();
     }
     
     public boolean selectNewProfile()
@@ -104,7 +104,7 @@ public class SaveFileManager
             {
                 raf.seek(outFile.length() - 2);
 
-                if (GHM.goToStartOfDate(raf) != today)
+                if (GoalHistoryManager.goToStartOfDate(raf) != today)
                 {
                     raf.seek(outFile.length());
                     raf.write(String.valueOf(today).getBytes());
@@ -113,6 +113,7 @@ public class SaveFileManager
             }
             
             raf.write(list.getEdits().getBytes());
+            raf.write(recordsep);
             raf.setLength(raf.getFilePointer());
             raf.close();
         } 
@@ -145,7 +146,7 @@ public class SaveFileManager
             
             
             int today = new ShortDate().getDays();
-            String editString = GHM.getEditStringFor(today, "ghistory");
+            String editString = GoalHistoryManager.getEditStringFor(today, "ghistory");
             if (!list.loadEditsFromString(editString)) return false;
             
             
@@ -206,6 +207,45 @@ public class SaveFileManager
         }
         
         return "";
+    }
+    
+    public ArrayList<Goal> getGoalListForDate(int date)
+    {
+        if (currentFile == null && !selectNewProfile()) return null;
+        
+        extractProfile(currentFile);
+        ArrayList<Goal> goals = new ArrayList();
+        
+        try
+        {
+            FileReader reader = new FileReader("goals");
+
+            try
+            {
+                Goal newGoal = new Goal();
+                while (newGoal.read(reader))
+                {
+                    goals.add(newGoal);
+                    newGoal = new Goal();
+                }
+
+                reader.close();
+                
+                if (!GoalHistoryManager.takeGoalListTo(goals, date, new RandomAccessFile("ghistory", "r"))) return null;
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+        
+        deleteSaveFiles();
+        return goals;
     }
     
     /**
