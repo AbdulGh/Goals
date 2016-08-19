@@ -231,7 +231,7 @@ public class SaveFileManager
 
                 reader.close();
                 
-                if (!GoalHistoryManager.takeGoalListTo(goals, date, new RandomAccessFile("ghistory", "r"))) return null;
+                if (!GoalHistoryManager.takeGoalListTo(goals, date, "ghistory")) return null;
             }
             catch (IOException e)
             {
@@ -241,6 +241,7 @@ public class SaveFileManager
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             return null;
         }
         

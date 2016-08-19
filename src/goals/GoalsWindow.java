@@ -3,6 +3,7 @@ package goals;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.*;
+import java.text.ParseException;
 import javax.swing.*;
 import javax.swing.border.*;
 
@@ -86,14 +87,14 @@ public class GoalsWindow extends JFrame
         {
            public void actionPerformed(ActionEvent e)
            {
-                String dateString = JOptionPane.showInputDialog(GoalsWindow.this, "Go to which date? dd/mm/yyyy");
+                String dateString = JOptionPane.showInputDialog(GoalsWindow.this, "Go to which date? dd/mm/yyyy", new ShortDate().toString());
                 if (dateString != null)
                 {
                     try
                     {
                         goToDate(new ShortDate(dateString));
                     }
-                    catch (Exception ex)
+                    catch (ParseException ex)
                     {
                         JOptionPane.showMessageDialog(GoalsWindow.this, "Please enter a date in the form dd/mm/yyyy!", 
                                 "Misformed date", JOptionPane.ERROR_MESSAGE);
@@ -169,7 +170,7 @@ public class GoalsWindow extends JFrame
                     JList list = (JList)e.getSource();
                     
                     int selectedGoals = list.getSelectedIndices().length;
-                    if (selectedGoals < 2)
+                    if (selectedGoals == 1)
                     {
                         int row = list.locationToIndex(e.getPoint());
                         list.setSelectedIndex(row);
@@ -204,6 +205,9 @@ public class GoalsWindow extends JFrame
     {
         this.date = date;
         todaysEntry.setText(sfm.getEntryFor(date.getDays()));
+        
         refreshUI();
+        
+        list.setDispList(sfm.getGoalListForDate(date.getDays()));
     }
 }

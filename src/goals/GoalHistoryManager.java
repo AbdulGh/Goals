@@ -2,6 +2,7 @@ package goals;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class GoalHistoryManager
 {
@@ -56,8 +57,55 @@ public class GoalHistoryManager
         return editString;
     }
     
-    public static boolean takeGoalListTo(ArrayList<Goal> todaysGoals, int date, RandomAccessFile raf)
+    public static boolean takeGoalListTo(ArrayList<Goal> goalList, int date, String filename) throws IOException
     {
+        File inFile = new File(filename);
+        
+        if (inFile.length() < 2) return false;
+        
+        RandomAccessFile raf = new RandomAccessFile(inFile, "r");
+        raf.seek(inFile.length() - 2);
+        
+        while (goToStartOfDate(raf) > date)
+        {   
+            String name = "";
+            int c;
+            while ((c = raf.read()) != '\0') //remove additions
+            {
+                if (c == unitsep)
+                {
+                    Iterator<Goal> it = goalList.iterator();
+                    while (it.hasNext())
+                    {
+                        Goal g = it.next();
+                        if (g.getName().equals(name))
+                        {
+                            goalList.remove(g);
+                            break;
+                        }
+                    }
+                    name = "";
+                }
+                else name += (char)c;
+            }
+            
+            //add removals
+            String removals = "";
+            Goal g = new Goal();
+            while ((c=raf.read()) != recordsep) removals += (char)c;
+            StringReader sr = new StringReader(removals);
+            while (g.read(sr))
+            {
+                goalList.add(g);
+                g = new Goal();
+            }
+            sr.close();
+            
+            raf.seek(raf.getFilePointer() - 2);
+            int lastDate = goToStartOfDate(raf);
+            raf.seek(raf.getFilePointer() - (int)Math.log10(lastDate) - 4);
+        }
+        
         return true;
     }
     
