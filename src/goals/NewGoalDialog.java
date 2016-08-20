@@ -112,9 +112,11 @@ public class NewGoalDialog extends JDialog
         
         getContentPane().add(panel);
         pack();
+        
+        this.getRootPane().setDefaultButton(ok);
     }
     
-    class CreateGoal implements ActionListener
+    private class CreateGoal implements ActionListener
     {
         @Override
         public void actionPerformed(ActionEvent e)

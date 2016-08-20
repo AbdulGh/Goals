@@ -3,7 +3,6 @@ package goals;
 import java.io.*;
 import java.util.zip.*;
 import java.util.ArrayList;
-import java.util.List;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
@@ -150,7 +149,9 @@ public class SaveFileManager
             if (!list.loadEditsFromString(editString)) return false;
             
             
-            todaysEntry.setText(getEntryFor(today));
+            if (todaysEntry.getText().length() == 0 || 
+                JOptionPane.showConfirmDialog(null, "Would you like to keep todays text?") == JOptionPane.NO_OPTION)
+                todaysEntry.setText(getEntryFor(today));
             
             deleteSaveFiles();
         }

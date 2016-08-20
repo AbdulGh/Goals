@@ -51,6 +51,7 @@ public class GoalsWindow extends JFrame
         
         JMenuBar menuBar = new JMenuBar();
         JMenu file = new JMenu("File");
+        file.setMnemonic('F');
         
         JMenuItem load = new JMenuItem("Load");
         load.addActionListener(new ActionListener()
@@ -60,6 +61,8 @@ public class GoalsWindow extends JFrame
                 sfm.load(list, todaysEntry);
            }
         });
+        load.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B,
+                                           java.awt.Event.CTRL_MASK));
         file.add(load);
         
         JMenuItem save = new JMenuItem("Save");
@@ -70,6 +73,8 @@ public class GoalsWindow extends JFrame
                sfm.save(list, todaysEntry.getText());
            }
         });
+        save.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S,
+                                           java.awt.Event.CTRL_MASK));
         file.add(save);
         
         JMenuItem saveas = new JMenuItem("Save as");
@@ -87,7 +92,8 @@ public class GoalsWindow extends JFrame
         {
            public void actionPerformed(ActionEvent e)
            {
-                String dateString = JOptionPane.showInputDialog(GoalsWindow.this, "Go to which date? dd/mm/yyyy", new ShortDate().toString());
+                String dateString = JOptionPane.showInputDialog(GoalsWindow.this, 
+                        "Go to which date? dd/mm/yyyy", new ShortDate().toString());
                 if (dateString != null)
                 {
                     try
@@ -96,12 +102,15 @@ public class GoalsWindow extends JFrame
                     }
                     catch (ParseException ex)
                     {
-                        JOptionPane.showMessageDialog(GoalsWindow.this, "Please enter a date in the form dd/mm/yyyy!", 
+                        JOptionPane.showMessageDialog(GoalsWindow.this, 
+                                "Please enter a date in the form dd/mm/yyyy!", 
                                 "Misformed date", JOptionPane.ERROR_MESSAGE);
                     }
                 }
            }
         });
+        browse.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B,
+                                           java.awt.Event.CTRL_MASK));
         file.add(browse);
         
         menuBar.add(file);
