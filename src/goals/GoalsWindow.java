@@ -61,7 +61,7 @@ public class GoalsWindow extends JFrame
                 sfm.load(list, todaysEntry);
            }
         });
-        load.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B,
+        load.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L,
                                            java.awt.Event.CTRL_MASK));
         file.add(load);
         

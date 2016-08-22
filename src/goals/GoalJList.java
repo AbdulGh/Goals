@@ -164,7 +164,7 @@ public class GoalJList extends JList
             todaysEdits += todaysRemovals.get(0).getSaveString();
             
             for (int i = 1; i < todaysRemovals.size(); i++)
-                todaysEdits += unitsep + todaysRemovals.get(i).getSaveString();
+                todaysEdits += todaysRemovals.get(i).getSaveString();
         }
         
         return todaysEdits;

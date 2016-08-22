@@ -38,6 +38,7 @@ public class Goal implements Comparable
             name = Character.toString((char)readValue);
             while ((readValue = in.read()) != unitsep) name += (char)readValue;
         }
+        System.out.println(name);
         
         details = "";
         while ((readValue = in.read()) != unitsep) details += (char)readValue;

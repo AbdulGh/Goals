@@ -66,6 +66,7 @@ public class GoalHistoryManager
         RandomAccessFile raf = new RandomAccessFile(inFile, "r");
         raf.seek(inFile.length() - 2);
         
+        
         while (goToStartOfDate(raf) > date)
         {   
             String name = "";
@@ -89,6 +90,8 @@ public class GoalHistoryManager
                 else name += (char)c;
             }
             
+            
+            
             //add removals
             String removals = "";
             Goal g = new Goal();
@@ -105,7 +108,6 @@ public class GoalHistoryManager
             int lastDate = goToStartOfDate(raf);
             raf.seek(raf.getFilePointer() - (int)Math.log10(lastDate) - 4);
         }
-        
         return true;
     }
     
