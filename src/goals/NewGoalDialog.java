@@ -4,16 +4,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-import java.text.ParseException;
-
 public class NewGoalDialog extends JDialog
 {
     private Goal createdGoal;
     
     public JTextField name;
     private JTextArea desc;
-    private JTextField set;
-    private JTextField expires;
+    private DateJPanel set;
+    private DateJPanel expires;
+    private JCheckBox expiresCheck;
     
     public NewGoalDialog(Goal old)
     {
@@ -52,7 +51,15 @@ public class NewGoalDialog extends JDialog
         panel.add(new JLabel("Start:"), quick);
         
         quick.gridy = 3;
-        panel.add(new JLabel("Expires:"), quick);
+        expiresCheck = new JCheckBox("Expires:", false);
+        expiresCheck.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                expires.setEnabled(expiresCheck.isSelected());
+            }
+        });
+        panel.add(expiresCheck, quick);
         
         JButton ok = new JButton("Add");
         quick.gridx = 1;
@@ -89,11 +96,11 @@ public class NewGoalDialog extends JDialog
         quick.gridy = 1;
         panel.add(scrollPane, quick);
         
-        set = new JTextField(new ShortDate().toString(), 10);
+        set = new DateJPanel();
         quick.gridy = 2;
         panel.add(set, quick);
         
-        expires = new JTextField("dd/mm/yyyy", 10);
+        expires = new DateJPanel();
         quick.gridy = 3;
         panel.add(expires, quick);
         
@@ -103,12 +110,16 @@ public class NewGoalDialog extends JDialog
             desc.setText(createdGoal.getDetails());
             
             if (createdGoal.getSet() != null)
-                set.setText(createdGoal.getSet().toString());
-            else set.setText("dd/mm/yyyy");
-            
+                set.setDate(createdGoal.getSet());
+
             if (createdGoal.getExpires() != null)
-                set.setText(createdGoal.getExpires().toString());
+            {
+                expires.setDate(createdGoal.getExpires());
+                expiresCheck.setSelected(true);
+            }
         }
+        
+        expires.setEnabled(expiresCheck.isSelected());
         
         getContentPane().add(panel);
         pack();
@@ -120,28 +131,8 @@ public class NewGoalDialog extends JDialog
     {
         @Override
         public void actionPerformed(ActionEvent e)
-        {
-            ShortDate setD, expiresD;
-            
-            try
-            {
-                setD = new ShortDate(set.getText());
-            }
-            catch (ParseException p)
-            {
-                setD = null;
-            }
-            
-            try
-            {
-                expiresD = new ShortDate(expires.getText());
-            }
-            catch (ParseException p)
-            {
-                expiresD = null;
-            }
-            
-            createdGoal = new Goal(name.getText(), desc.getText(), setD, expiresD);
+        {   
+            createdGoal = new Goal(name.getText(), desc.getText(), set.getValue(), expires.getValue());
             setVisible(false);
         }
     }

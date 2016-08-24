@@ -100,6 +100,7 @@ public class GoalHistoryManager
             while (g.read(sr))
             {
                 goalList.add(g);
+                System.out.println("Added " + g.getName());
                 g = new Goal();
             }
             sr.close();
