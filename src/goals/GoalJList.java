@@ -3,18 +3,19 @@ package goals;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.*;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 
+import java.io.*;
+import javax.swing.*;
+import javax.swing.border.*;
+import java.awt.*;
+import java.awt.event.*;
+
 public class GoalJList extends JList
 {
     private Map<String, Goal> goalList;
-    
     
     private List<String> todaysAdditions;
     private List<Goal> todaysRemovals;
@@ -29,6 +30,7 @@ public class GoalJList extends JList
         todaysRemovals = new ArrayList<Goal>();
         
         setFont(getFont().deriveFont(Font.PLAIN));
+        setCellRenderer(new CellBorderRenderer());
         refresh();
     }
     
@@ -205,6 +207,29 @@ public class GoalJList extends JList
             e.printStackTrace();
         }
         return true;
+    }
+}
+
+class CellBorderRenderer implements ListCellRenderer
+{
+    private final Border fullBorder;
+    private final Border partBorder;
+    private final DefaultListCellRenderer defaultRenderer;
+    
+    public CellBorderRenderer()
+    {
+        fullBorder = new LineBorder(Color.GRAY);
+        partBorder = new MatteBorder(0,1,1,1,Color.GRAY);
+        defaultRenderer = new DefaultListCellRenderer();
+    }
+    
+    public Component getListCellRendererComponent(JList list, Object value, int index,
+                                                    boolean isSelected, boolean cellHasFocus) 
+    {
+        JLabel renderer = (JLabel) defaultRenderer.getListCellRendererComponent(list, value, index,
+                                                                                isSelected, cellHasFocus);
+        renderer.setBorder((index == 0) ? fullBorder : partBorder);
+        return renderer;
     }
 }
 

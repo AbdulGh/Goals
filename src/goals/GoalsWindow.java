@@ -33,6 +33,7 @@ public class GoalsWindow extends JFrame
         todaysEntry = new JTextArea(5, 100);
         todaysEntry.setLineWrap(true);
         todaysEntry.setWrapStyleWord(true);
+        todaysEntry.setFont(todaysEntry.getFont().deriveFont(14f));
         
         notesContainer = new JScrollPane(todaysEntry);
         notesContainer.setPreferredSize(new Dimension(640, 340));
@@ -112,8 +113,13 @@ public class GoalsWindow extends JFrame
         browse.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B,
                                            java.awt.Event.CTRL_MASK));
         file.add(browse);
-        
         menuBar.add(file);
+        
+        JMenu browsem = new JMenu("Browse");
+        browsem.setMnemonic('B');
+        
+        menuBar.add(browsem);
+        
         setJMenuBar(menuBar);
         
         //List right click menu

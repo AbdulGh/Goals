@@ -171,6 +171,36 @@ public class SaveFileManager
         return true;
     }
     
+    public String getPrevNotes(RandomAccessFile raf) throws IOException
+    {
+        //go to the start of the last entry
+        int prevDate = goToStartOfDate(raf);
+        long prevEntry = raf.getFilePointer() - (int)Math.log10(prevDate) - 4;
+        goToStartOfDate(raf);
+        
+        int c; String note = "";
+        while ((c = raf.read()) != recordsep) note += (char)c;
+        return note;
+    }
+    
+    public String getNextNotes(RandomAccessFile raf) throws IOException
+    {
+        int c;
+        while ((c = raf.read()) != recordsep) //go to start of the next date
+            if (c == -1) throw new EOFException();
+        while ((c = raf.read()) != unitsep) //go to start of the next entry
+            if (c == -1) throw new EOFException();
+        
+        String entry = "";
+        while ((c = (char)raf.read()) != recordsep)
+        {
+            if (c == -1) throw new EOFException();
+            else entry += c;
+        }
+        
+        return entry;
+    }
+    
     public String getEntryFor(int desiredDate)
     {
         if (currentFile == null && !selectNewProfile() || !extractProfile(currentFile)) return null;
@@ -189,14 +219,18 @@ public class SaveFileManager
                 {
                     String entry = "";
                     char c;
-                    while ((c = (char)raf.read()) != recordsep) entry += c;
+                    while ((c = (char)raf.read()) != recordsep)
+                    {
+                        if (c == -1) throw new EOFException();
+                        else entry += c;
+                    }
                     raf.close();
                     return entry;
                 }
                 
                 long prevEntry = raf.getFilePointer() - (int)Math.log10(prevDate) - 4;
                 
-                if (prevEntry <= 0) break;
+                if (prevEntry <= 0) return "";
                 raf.seek(prevEntry);
             }
             raf.close();

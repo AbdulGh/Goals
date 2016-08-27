@@ -66,49 +66,96 @@ public class GoalHistoryManager
         RandomAccessFile raf = new RandomAccessFile(inFile, "r");
         raf.seek(inFile.length() - 2);
         
-        
-        while (goToStartOfDate(raf) > date)
-        {   
-            String name = "";
-            int c;
-            while ((c = raf.read()) != '\0') //remove additions
+        int d;
+        while ((d = goToStartOfDate(raf)) >= date)
+        {
+            System.out.print(d);
+            updateWithCurrentEdits(goalList, raf);
+            if (!goToPrev(raf))
             {
-                if (c == unitsep)
-                {
-                    Iterator<Goal> it = goalList.iterator();
-                    while (it.hasNext())
-                    {
-                        Goal g = it.next();
-                        if (g.getName().equals(name))
-                        {
-                            goalList.remove(g);
-                            break;
-                        }
-                    }
-                    name = "";
-                }
-                else name += (char)c;
+                goalList.clear();
+                return false;
             }
-            
-            
-            
-            //add removals
-            String removals = "";
-            Goal g = new Goal();
-            while ((c=raf.read()) != recordsep) removals += (char)c;
-            StringReader sr = new StringReader(removals);
-            while (g.read(sr))
-            {
-                goalList.add(g);
-                System.out.println("Added " + g.getName());
-                g = new Goal();
-            }
-            sr.close();
-            
-            raf.seek(raf.getFilePointer() - 2);
-            int lastDate = goToStartOfDate(raf);
-            raf.seek(raf.getFilePointer() - (int)Math.log10(lastDate) - 4);
+            System.out.println();
         }
+        
+        raf.close();
+        return true;
+    }
+    
+    /**
+    * must be called after goToStartOfDate
+    */
+    private static void updateWithCurrentEdits(ArrayList<Goal> goalList, RandomAccessFile raf) throws IOException
+    {        
+        String name = "";
+        int c;
+        while ((c = raf.read()) != '\0') //remove additions
+        {
+            if (c == -1) throw new EOFException();
+            else if (c == unitsep)
+            {
+                Iterator<Goal> it = goalList.iterator();
+                while (it.hasNext())
+                {
+                    Goal g = it.next();
+                    if (g.getName().equals(name))
+                    {
+                        goalList.remove(g);
+                        break;
+                    }
+                }
+                name = "";
+            }
+            else name += (char)c;
+        }
+
+        //add removals
+        String removals = "";
+        Goal g = new Goal();
+        while ((c=raf.read()) != recordsep)
+        {
+            if (c == -1) throw new EOFException();
+            else removals += (char)c;
+        }
+        StringReader sr = new StringReader(removals);
+        while (g.read(sr))
+        {
+            goalList.add(g);
+            g = new Goal();
+        }
+        sr.close();
+        
+    }
+    
+    private static boolean goToPrev(RandomAccessFile raf) throws IOException
+    {
+        long pointer;
+        if ((pointer = raf.getFilePointer() - 2) < 0) return false;
+        raf.seek(pointer);
+        //go to the end of the current date
+        int c;
+        while ((c = raf.read()) != unitsep)
+        {
+            if (c == -1) throw new EOFException();
+            else if (--pointer < 0) return false;
+            raf.seek(pointer);
+        }
+        
+        //go to the start of the previous entry
+        if (--pointer < 0) throw new EOFException();
+        raf.seek(pointer);
+        
+        while ((c = raf.read()) != recordsep)
+        {
+            if (c == -1) throw new EOFException();
+            else if (--pointer < 0) return false;
+            else raf.seek(pointer);
+        }
+        
+        //go to the end of the start of the previous entry
+        if (--pointer < 0) return false;
+        raf.seek(pointer);
         return true;
     }
     
