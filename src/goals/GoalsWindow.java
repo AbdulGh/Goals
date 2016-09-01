@@ -88,8 +88,13 @@ public class GoalsWindow extends JFrame
         });
         file.add(saveas);
         
-        JMenuItem browse = new JMenuItem("Browse");
-        browse.addActionListener(new ActionListener()
+        menuBar.add(file);
+        
+        JMenu browse = new JMenu("Browse");
+        browse.setMnemonic('B');
+        
+        JMenuItem goTo = new JMenuItem("Go to date...");
+        goTo.addActionListener(new ActionListener()
         {
            public void actionPerformed(ActionEvent e)
            {
@@ -110,15 +115,37 @@ public class GoalsWindow extends JFrame
                 }
            }
         });
-        browse.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B,
+        goTo.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_G,
                                            java.awt.Event.CTRL_MASK));
+        browse.add(goTo);
+        
+        JMenuItem back = new JMenuItem("Go back");
+        back.addActionListener(new ActionListener()
+        {
+           public void actionPerformed(ActionEvent e)
+           {
+                //TODO
+           }
+        });
+        back.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B,
+                                           java.awt.Event.CTRL_MASK));
+        browse.add(back);
+        
+        JMenuItem fwd = new JMenuItem("Go forward");
+        fwd.addActionListener(new ActionListener()
+        {
+           public void actionPerformed(ActionEvent e)
+           {
+                //TODO
+           }
+        });
+        fwd.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F,
+                                           java.awt.Event.CTRL_MASK));
+        browse.add(fwd);    
+        
         file.add(browse);
-        menuBar.add(file);
         
-        JMenu browsem = new JMenu("Browse");
-        browsem.setMnemonic('B');
-        
-        menuBar.add(browsem);
+        menuBar.add(browse);
         
         setJMenuBar(menuBar);
         
@@ -218,11 +245,6 @@ public class GoalsWindow extends JFrame
     
     private void goToDate(ShortDate date)
     {
-        this.date = date;
-        todaysEntry.setText(sfm.getEntryFor(date.getDays()));
-        
-        refreshUI();
-        
-        list.setDispList(sfm.getGoalListForDate(date.getDays()));
+        //TODO
     }
 }

@@ -2,7 +2,6 @@ package goals;
 
 import java.io.*;
 import java.util.zip.*;
-import java.util.ArrayList;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
@@ -10,9 +9,10 @@ import javax.swing.JTextArea;
 public class SaveFileManager
 {
     private String currentFile;
-        
+    
     private static final char recordsep = (char)30;
     private static final char unitsep = (char)31;
+    
     
     public SaveFileManager()
     {
@@ -44,11 +44,12 @@ public class SaveFileManager
     {
         if (currentFile == null && !selectNewProfile()) return false;
         
-        todaysEntry.replaceAll("[\030\031]", "");
+        todaysEntry.replaceAll("[\030\031\000]", "");
         
         extractProfile(currentFile);
+        int today = new ShortDate().getDays();
         
-        if (!list.saveGoalsToFile("goals"))
+        if (!list.saveGoalsToFile(".goals"))
         {
             JOptionPane.showMessageDialog(null,
                     "Could not save goal list.",
@@ -59,62 +60,61 @@ public class SaveFileManager
         
         try
         {
-            //write notes
-            File outFile = new File("notes");
-            RandomAccessFile raf = new RandomAccessFile(outFile, "rw");
-            
-            int today = new ShortDate().getDays();
-
-            if (outFile.length() == 0)
-            {
-                raf.write(String.valueOf(today).getBytes());
-                raf.write(unitsep);
-            }
-
-            else
-            {
-                raf.seek(outFile.length() - 2);
-
-                if (goToStartOfDate(raf) != today) //add new date
-                {
-                    raf.seek(outFile.length());
-                    raf.write(String.valueOf(today).getBytes());
-                    raf.write(unitsep);
-                } //otherwise we're in the right position to start writing
-            }
-
-            raf.write(todaysEntry.getBytes());
-            raf.write(recordsep);
-            raf.setLength(raf.getFilePointer());
+            File pointers = new File(".pointers");
+            RandomAccessFile raf = new RandomAccessFile(pointers, "r");
+            raf.seek(pointers.length());
+            long[] data = SavePointerManager.readCurrentPointer(raf);
             raf.close();
             
-            //append goal changes
-            //TODO: find out why date is being written again and again
-            outFile = new File("ghistory");
-            raf = new RandomAccessFile(outFile, "rw");
-            
-            if (outFile.length() == 0)
+            if (data[0] == today)//overwrite todays goalhistory and notes
             {
-                raf.write(String.valueOf(today).getBytes());
-                raf.write(unitsep);
+                //overwrite notes
+                raf = new RandomAccessFile(".notes", "rw");
+                raf.seek(data[1]);
+                raf.writeChars(todaysEntry);
+                raf.setLength(raf.getFilePointer());
+                raf.close();
+                
+                //overwrite goal history
+                raf = new RandomAccessFile(".ghistory", "rw");
+                raf.seek(data[2]);
+                raf.writeChars(list.getEdits());
+                raf.setLength(raf.getFilePointer());
+                raf.close();
             }
             
-            else //check if we need to overwrite todays entry
+            else //add new day
             {
-                raf.seek(outFile.length() - 2);
-
-                if (GoalHistoryManager.goToStartOfDate(raf) != today)
-                {
-                    raf.seek(outFile.length());
-                    raf.write(String.valueOf(today).getBytes());
-                    raf.write(unitsep);
-                }
+                File notes = new File(".notes");
+                raf = new RandomAccessFile(notes, "rw");
+                raf.seek(notes.length());
+                raf.writeChar(recordsep);
+                long notesPos = raf.getFilePointer();
+                raf.writeChars(todaysEntry);
+                raf.setLength(raf.getFilePointer());
+                raf.close();
+                
+                File ghistory = new File(".ghistory");
+                raf = new RandomAccessFile(ghistory, "rw");
+                raf.seek(ghistory.length());
+                raf.writeChar(recordsep);
+                long ghistoryPos = raf.getFilePointer();
+                raf.writeChars(list.getEdits());
+                raf.setLength(raf.getFilePointer());
+                raf.close();
+                
+                raf = new RandomAccessFile(pointers, "rw");
+                raf.seek(pointers.length());
+                raf.writeChar(recordsep);
+                raf.writeChars(String.valueOf(today));
+                raf.writeChar(unitsep);
+                raf.writeChars(String.valueOf(notesPos));
+                raf.writeChar(unitsep);
+                raf.writeChars(String.valueOf(ghistoryPos));
+                raf.setLength(raf.getFilePointer());
+                raf.close();
             }
             
-            raf.write(list.getEdits().getBytes());
-            raf.write(recordsep);
-            raf.setLength(raf.getFilePointer());
-            raf.close();
         } 
         catch (Exception ex)
         {
@@ -141,17 +141,36 @@ public class SaveFileManager
         
         try
         {
-            if (!list.loadGoalsFromFile("goals")) return false;
+            if (!list.loadGoalsFromFile(".goals")) return false;
             
+            File pointers = new File(".pointers");
+            RandomAccessFile raf = new RandomAccessFile(pointers, "r");
+            raf.seek(pointers.length());
+            long[] data = SavePointerManager.readCurrentPointer(raf);
+            raf.close();
             
-            int today = new ShortDate().getDays();
-            String editString = GoalHistoryManager.getEditStringFor(today, "ghistory");
-            if (!list.loadEditsFromString(editString)) return false;
-            
-            
-            if (todaysEntry.getText().length() == 0 || 
-                JOptionPane.showConfirmDialog(null, "Would you like to keep todays text?") == JOptionPane.NO_OPTION)
-                todaysEntry.setText(getEntryFor(today));
+            if (data[0] == new ShortDate().getDays()) //load notes and ghistory
+            {
+                File notes = new File (".notes");
+                raf = new RandomAccessFile(notes, "r");
+                raf.seek(data[1]);
+                String todaysNotes = "";
+                int c;
+                while ((c = raf.read()) != -1)
+                    todaysNotes += (char)c;
+                System.out.println(todaysNotes);
+                raf.close();
+                todaysEntry.setText(todaysNotes);
+                
+                File ghistory = new File (".ghistory");
+                raf = new RandomAccessFile(ghistory, "r");
+                raf.seek(data[2]);
+                String todaysEdits = "";
+                while ((c = raf.read()) != -1)
+                    todaysEdits += (char)c;
+                raf.close();
+                list.loadEditsFromString(todaysEdits);
+            }
             
             deleteSaveFiles();
         }
@@ -171,140 +190,6 @@ public class SaveFileManager
         return true;
     }
     
-    public String getPrevNotes(RandomAccessFile raf) throws IOException
-    {
-        //go to the start of the last entry
-        int prevDate = goToStartOfDate(raf);
-        long prevEntry = raf.getFilePointer() - (int)Math.log10(prevDate) - 4;
-        goToStartOfDate(raf);
-        
-        int c; String note = "";
-        while ((c = raf.read()) != recordsep) note += (char)c;
-        return note;
-    }
-    
-    public String getNextNotes(RandomAccessFile raf) throws IOException
-    {
-        int c;
-        while ((c = raf.read()) != recordsep) //go to start of the next date
-            if (c == -1) throw new EOFException();
-        while ((c = raf.read()) != unitsep) //go to start of the next entry
-            if (c == -1) throw new EOFException();
-        
-        String entry = "";
-        while ((c = (char)raf.read()) != recordsep)
-        {
-            if (c == -1) throw new EOFException();
-            else entry += c;
-        }
-        
-        return entry;
-    }
-    
-    public String getEntryFor(int desiredDate)
-    {
-        if (currentFile == null && !selectNewProfile() || !extractProfile(currentFile)) return null;
-        
-        try
-        {
-            File notes = new File("notes");
-            RandomAccessFile raf = new RandomAccessFile(notes, "rw");
-            raf.seek(notes.length() - 2);
-            
-            int prevDate;
-            
-            while ((prevDate = goToStartOfDate(raf)) >= desiredDate)
-            {   
-                if (prevDate == desiredDate)
-                {
-                    String entry = "";
-                    char c;
-                    while ((c = (char)raf.read()) != recordsep)
-                    {
-                        if (c == -1) throw new EOFException();
-                        else entry += c;
-                    }
-                    raf.close();
-                    return entry;
-                }
-                
-                long prevEntry = raf.getFilePointer() - (int)Math.log10(prevDate) - 4;
-                
-                if (prevEntry <= 0) return "";
-                raf.seek(prevEntry);
-            }
-            raf.close();
-        }
-        catch (IOException e)
-        {
-            System.err.println("IOException in getEntryFor()...");
-            e.printStackTrace();
-        }
-        
-        return "";
-    }
-    
-    public ArrayList<Goal> getGoalListForDate(int date)
-    {
-        if (currentFile == null && !selectNewProfile()) return null;
-        
-        extractProfile(currentFile);
-        ArrayList<Goal> goals = new ArrayList();
-        
-        try
-        {
-            FileReader reader = new FileReader("goals");
-
-            try
-            {
-                Goal newGoal = new Goal();
-                while (newGoal.read(reader))
-                {
-                    goals.add(newGoal);
-                    newGoal = new Goal();
-                }
-
-                reader.close();
-                
-                if (!GoalHistoryManager.takeGoalListTo(goals, date, "ghistory")) return null;
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-                return null;
-            }
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            return null;
-        }
-        
-        deleteSaveFiles();
-        return goals;
-    }
-    
-    /**
-    * @returns the date prior to the cursor, while moving the cursor to the first character of the entry
-    */
-    private int goToStartOfDate(RandomAccessFile raf) throws IOException
-    {
-        //seek to start of the most recent date
-        for (long pointer = raf.getFilePointer(); pointer >= 0 && raf.read() != recordsep; pointer--)
-            raf.seek(pointer);
-        
-        //read the date
-        int date = raf.read() - '0';
-        char c;
-        while ((c = (char)raf.read()) != unitsep)
-        {
-            date *= 10;
-            date += c - '0';
-        }
-        
-        return date;
-    }
-    
     private boolean extractProfile(String fileName)
     {
         File profile = new File(fileName);
@@ -314,9 +199,8 @@ public class SaveFileManager
             try
             {
                 profile.createNewFile();
-                new File("goals").createNewFile();
-                new File("notes").createNewFile();
-                new File("ghistory").createNewFile();
+                createNewProfile();
+                return true;
             }
             catch (IOException e)
             {
@@ -324,7 +208,6 @@ public class SaveFileManager
                 e.printStackTrace();
                 return false;
             }
-            return true;
         }
         
         try
@@ -333,9 +216,9 @@ public class SaveFileManager
             ZipInputStream zin = new ZipInputStream(new FileInputStream(profile));
             
             //extract the three files
-            int i = 3;
+            int i;
             ZipEntry e = null;       
-            for (i = 3; i > 0; i--)
+            for (i = 4; i > 0; i--)
             {
                 e = zin.getNextEntry();
                 if (e == null) break;
@@ -374,11 +257,29 @@ public class SaveFileManager
     {
         try
         {
+            File profile = new File(fileName);
+        
+            if (!profile.exists())
+            {
+                try
+                {
+                    profile.createNewFile();
+                    createNewProfile();
+                    return true;
+                }
+                catch (IOException e)
+                {
+                    System.err.println("IOException creating a new profile...");
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+            
             ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(currentFile));
             byte[] buf = new byte[2048];
 
-            FileInputStream inputStream = new FileInputStream("goals");
-            zout.putNextEntry(new ZipEntry("goals"));
+            FileInputStream inputStream = new FileInputStream(".goals");
+            zout.putNextEntry(new ZipEntry(".goals"));
 
             int read;
             while ((read = inputStream.read(buf)) > 0)
@@ -386,16 +287,24 @@ public class SaveFileManager
             inputStream.close();
             zout.closeEntry();
 
-            inputStream = new FileInputStream("notes");
-            zout.putNextEntry(new ZipEntry("notes"));
+            inputStream = new FileInputStream(".notes");
+            zout.putNextEntry(new ZipEntry(".notes"));
 
             while ((read = inputStream.read(buf)) > 0)
                 zout.write(buf, 0, read);
             inputStream.close();
             zout.closeEntry();
             
-            inputStream = new FileInputStream("ghistory");
-            zout.putNextEntry(new ZipEntry("ghistory"));
+            inputStream = new FileInputStream(".pointers");
+            zout.putNextEntry(new ZipEntry(".pointers"));
+
+            while ((read = inputStream.read(buf)) > 0)
+                zout.write(buf, 0, read);
+            inputStream.close();
+            zout.closeEntry();
+            
+            inputStream = new FileInputStream(".ghistory");
+            zout.putNextEntry(new ZipEntry(".ghistory"));
 
             while ((read = inputStream.read(buf)) > 0)
                 zout.write(buf, 0, read);
@@ -414,8 +323,28 @@ public class SaveFileManager
     
     private void deleteSaveFiles()
     {
-        new File("goals").delete();
-        new File("notes").delete();
-        new File("ghistory").delete();
+        new File(".goals").delete();
+        new File(".notes").delete();
+        new File(".ghistory").delete();
+        new File(".pointers").delete();
     }
+    
+    private void createNewProfile() throws IOException
+    {
+        File pointers = new File(".pointers");
+        pointers.createNewFile();
+        
+        FileWriter fw = new FileWriter(pointers);
+        fw.write(String.valueOf(new ShortDate().getDays()));
+        fw.write(unitsep);
+        fw.write('0');
+        fw.write(unitsep);
+        fw.write('0');
+        fw.close();
+        
+        new File(".goals").createNewFile();
+        new File(".notes").createNewFile();
+        new File(".ghistory").createNewFile();
+    }
+    
 }

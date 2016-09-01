@@ -29,9 +29,7 @@ public class Goal implements Comparable
     public boolean read(Reader in) throws IOException, EOFException
     {
         int readValue = in.read();
-        if (readValue == -1) return false;
-        
-        if (readValue == recordsep) return false;
+        if (readValue == -1 || readValue == recordsep) return false;
         if (readValue == unitsep) name = "";
         else
         {

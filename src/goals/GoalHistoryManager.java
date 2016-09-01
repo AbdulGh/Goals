@@ -69,7 +69,6 @@ public class GoalHistoryManager
         int d;
         while ((d = goToStartOfDate(raf)) >= date)
         {
-            System.out.print(d);
             updateWithCurrentEdits(goalList, raf);
             if (!goToPrev(raf))
             {
@@ -131,7 +130,7 @@ public class GoalHistoryManager
     private static boolean goToPrev(RandomAccessFile raf) throws IOException
     {
         long pointer;
-        if ((pointer = raf.getFilePointer() - 2) < 0) return false;
+        if ((pointer = raf.getFilePointer() - 1) < 0) return false;
         raf.seek(pointer);
         //go to the end of the current date
         int c;
@@ -149,7 +148,10 @@ public class GoalHistoryManager
         while ((c = raf.read()) != recordsep)
         {
             if (c == -1) throw new EOFException();
-            else if (--pointer < 0) return false;
+            else if (--pointer < 0) //first entry, seek to end 
+            {
+                return false;
+            }
             else raf.seek(pointer);
         }
         

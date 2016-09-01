@@ -158,16 +158,14 @@ public class GoalJList extends JList
     {
         String todaysEdits = "";
         
-        for (String x: todaysAdditions) todaysEdits += x + unitsep;
+        for (String x: todaysAdditions) 
+            todaysEdits += x + unitsep; //TODO: FIX THIS
+        
         todaysEdits += "\0"; //used to seperate additions and removals
         
         if (!todaysRemovals.isEmpty())
-        {
-            todaysEdits += todaysRemovals.get(0).getSaveString();
-            
-            for (int i = 1; i < todaysRemovals.size(); i++)
-                todaysEdits += todaysRemovals.get(i).getSaveString();
-        }
+            for (Goal g : todaysRemovals)
+                todaysEdits += g.getSaveString();
         
         return todaysEdits;
     }
