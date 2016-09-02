@@ -159,7 +159,7 @@ public class GoalJList extends JList
         String todaysEdits = "";
         
         for (String x: todaysAdditions) 
-            todaysEdits += x + unitsep; //TODO: FIX THIS
+            todaysEdits += x + unitsep;
         
         todaysEdits += "\0"; //used to seperate additions and removals
         

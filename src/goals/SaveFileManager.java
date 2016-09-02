@@ -78,6 +78,7 @@ public class SaveFileManager
                 //overwrite goal history
                 raf = new RandomAccessFile(".ghistory", "rw");
                 raf.seek(data[2]);
+                        
                 raf.writeChars(list.getEdits());
                 raf.setLength(raf.getFilePointer());
                 raf.close();
