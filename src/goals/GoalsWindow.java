@@ -27,8 +27,19 @@ public class GoalsWindow extends JFrame
     {
         setTitle("Goals");
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(1000,600));
+        
+        addWindowListener(new WindowAdapter()
+        {
+           @Override
+           public void windowClosing(WindowEvent e)
+           {
+               if (JOptionPane.showConfirmDialog(null, "Would you like to save?", "Save", JOptionPane.YES_NO_OPTION)
+                       == JOptionPane.YES_OPTION) sfm.save(list, todaysEntry.getText());
+               dispose();
+               System.exit(0);
+           }
+        });
         
         todaysEntry = new JTextArea(5, 100);
         todaysEntry.setLineWrap(true);

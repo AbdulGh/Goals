@@ -9,14 +9,14 @@ import javax.swing.JTextArea;
 public class SaveFileManager
 {
     private String currentFile;
+    private RandomAccessFile historySeeker;
     
     private static final char recordsep = (char)30;
-    private static final char unitsep = (char)31;
-    
     
     public SaveFileManager()
     {
         currentFile = null;
+        historySeeker = null;
     }
     
     public boolean selectNewProfile()
@@ -65,13 +65,13 @@ public class SaveFileManager
             raf.seek(pointers.length());
             long[] data = SavePointerManager.readCurrentPointer(raf);
             raf.close();
-            
+
             if (data[0] == today)//overwrite todays goalhistory and notes
             {
                 //overwrite notes
                 raf = new RandomAccessFile(".notes", "rw");
                 raf.seek(data[1]);
-                raf.writeChars(todaysEntry);
+                raf.writeBytes(todaysEntry);
                 raf.setLength(raf.getFilePointer());
                 raf.close();
                 
@@ -79,7 +79,7 @@ public class SaveFileManager
                 raf = new RandomAccessFile(".ghistory", "rw");
                 raf.seek(data[2]);
                         
-                raf.writeChars(list.getEdits());
+                raf.writeBytes(list.getEdits());
                 raf.setLength(raf.getFilePointer());
                 raf.close();
             }
@@ -91,7 +91,7 @@ public class SaveFileManager
                 raf.seek(notes.length());
                 raf.writeChar(recordsep);
                 long notesPos = raf.getFilePointer();
-                raf.writeChars(todaysEntry);
+                raf.writeBytes(todaysEntry);
                 raf.setLength(raf.getFilePointer());
                 raf.close();
                 
@@ -100,18 +100,18 @@ public class SaveFileManager
                 raf.seek(ghistory.length());
                 raf.writeChar(recordsep);
                 long ghistoryPos = raf.getFilePointer();
-                raf.writeChars(list.getEdits());
+                System.out.println("gPos: " + ghistoryPos);
+                raf.writeBytes(list.getEdits());
                 raf.setLength(raf.getFilePointer());
                 raf.close();
                 
                 raf = new RandomAccessFile(pointers, "rw");
                 raf.seek(pointers.length());
                 raf.writeChar(recordsep);
-                raf.writeChars(String.valueOf(today));
-                raf.writeChar(unitsep);
-                raf.writeChars(String.valueOf(notesPos));
-                raf.writeChar(unitsep);
-                raf.writeChars(String.valueOf(ghistoryPos));
+                
+                raf.writeInt(today);
+                raf.writeLong(notesPos);
+                raf.writeLong(ghistoryPos);
                 raf.setLength(raf.getFilePointer());
                 raf.close();
             }
@@ -155,22 +155,14 @@ public class SaveFileManager
                 File notes = new File (".notes");
                 raf = new RandomAccessFile(notes, "r");
                 raf.seek(data[1]);
-                String todaysNotes = "";
-                int c;
-                while ((c = raf.read()) != -1)
-                    todaysNotes += (char)c;
-                System.out.println(todaysNotes);
+                todaysEntry.setText(readString(raf));
                 raf.close();
-                todaysEntry.setText(todaysNotes);
-                
+                                
                 File ghistory = new File (".ghistory");
                 raf = new RandomAccessFile(ghistory, "r");
                 raf.seek(data[2]);
-                String todaysEdits = "";
-                while ((c = raf.read()) != -1)
-                    todaysEdits += (char)c;
+                list.loadEditsFromString(readString(raf));
                 raf.close();
-                list.loadEditsFromString(todaysEdits);
             }
             
             deleteSaveFiles();
@@ -189,6 +181,56 @@ public class SaveFileManager
         }
        
         return true;
+    }
+    
+    public long goBack(GoalJList list, JTextArea todaysEntry)
+    {
+        try
+        {
+            if (historySeeker == null)
+            {
+                extractProfile(currentFile);
+                File pointers = new File(".pointers");
+                historySeeker = new RandomAccessFile(pointers, "r");
+                historySeeker.seek(pointers.length() - 1);
+            }
+            
+            long[] data = SavePointerManager.readPreviousPointer(historySeeker);
+                
+            RandomAccessFile raf = new RandomAccessFile(".notes", "r");
+            raf.seek(data[1]);
+            todaysEntry.setText(readString(raf));
+            raf.close();
+            
+            raf = new RandomAccessFile(".ghistory", "r");
+            raf.seek(data[2]);
+            list.loadEditsFromString(readString(raf));
+            raf.close();
+            
+            return data[0];
+        }
+        catch (FileNotFoundException e)
+        {
+            JOptionPane.showMessageDialog(null,
+                "This is not a valid profile.",
+                "Invalid Profile",
+                JOptionPane.ERROR_MESSAGE);
+            return -1;
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+    
+    private String readString(RandomAccessFile raf) throws IOException
+    {
+        String value = "";
+        int c;
+        while ((c = raf.read()) != recordsep && c != -1)
+            value += (char)c;
+        return value;
     }
     
     private boolean extractProfile(String fileName)
@@ -335,13 +377,10 @@ public class SaveFileManager
         File pointers = new File(".pointers");
         pointers.createNewFile();
         
-        FileWriter fw = new FileWriter(pointers);
-        fw.write(String.valueOf(new ShortDate().getDays()));
-        fw.write(unitsep);
-        fw.write('0');
-        fw.write(unitsep);
-        fw.write('0');
-        fw.close();
+        DataOutputStream out = new DataOutputStream(new FileOutputStream(pointers));
+        out.writeInt(new ShortDate().getDays());
+        out.writeLong(0);
+        out.writeLong(0);
         
         new File(".goals").createNewFile();
         new File(".notes").createNewFile();

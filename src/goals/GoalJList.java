@@ -90,8 +90,7 @@ public class GoalJList extends JList
     {
         if (todaysAdditions.contains(x.getName()))
             todaysAdditions.remove(x.getName());
-        else if (goalList.remove(x.getName()) != null) todaysRemovals.add(x);
-        
+        if (goalList.remove(x.getName()) != null) todaysRemovals.add(x);     
     }
     
     public Goal[] getGoals()

@@ -15,9 +15,9 @@ public class SavePointerManager
         while (--pointer >= 0 && raf.read() != recordsep)
             raf.seek(pointer);
         
-        data[0] = readLong(raf); //date
-        data[1] = readLong(raf); //notes pointer
-        data[2] = readLong(raf); //goal history pointer
+        data[0] = raf.readInt(); //date
+        data[1] = raf.readLong(); //notes pointer
+        data[2] = raf.readLong(); //goal history pointer
         return data;
     }
     
@@ -33,18 +33,4 @@ public class SavePointerManager
         raf.seek(pointer - 1);
         return readCurrentPointer(raf);
     }
-    
-    private static long readLong(RandomAccessFile raf) throws IOException
-    {
-        long returnval = raf.read() - '0';
-        char charRead;
-        
-        while (Character.isDigit(charRead = (char)raf.read()))
-        {
-            returnval *= 10;
-            returnval += charRead - '0';
-        }
-        return returnval;
-    }
-    
 }
