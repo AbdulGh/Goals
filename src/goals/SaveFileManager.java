@@ -51,10 +51,7 @@ public class SaveFileManager
         
         if (!list.saveGoalsToFile(".goals"))
         {
-            JOptionPane.showMessageDialog(null,
-                    "Could not save goal list.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            ErrorDialog.ErrorMessageDialog("Could not save goals to file!");
             return false;
         }
         
@@ -100,7 +97,6 @@ public class SaveFileManager
                 raf.seek(ghistory.length());
                 raf.writeChar(recordsep);
                 long ghistoryPos = raf.getFilePointer();
-                System.out.println("gPos: " + ghistoryPos);
                 raf.writeBytes(list.getEdits());
                 raf.setLength(raf.getFilePointer());
                 raf.close();
@@ -117,9 +113,9 @@ public class SaveFileManager
             }
             
         } 
-        catch (Exception ex)
+        catch (Exception e)
         {
-            ex.printStackTrace();
+            new ErrorDialog("Exception whilst saving", e);
             return false;
         }
         
@@ -137,7 +133,6 @@ public class SaveFileManager
         
         String filename = chooseDialog.getSelectedFile().getName();
         currentFile = filename;
-
         extractProfile(currentFile);
         
         try
@@ -166,27 +161,57 @@ public class SaveFileManager
             }
             
             deleteSaveFiles();
+            
+            if (historySeeker != null)
+            {
+                historySeeker.close();
+                historySeeker = null;
+            }
         }
         catch (FileNotFoundException e)
         {
-            JOptionPane.showMessageDialog(null,
-                    "This is not a valid profile.",
-                    "Invalid Profile",
-                    JOptionPane.ERROR_MESSAGE);
+            ErrorDialog.ErrorMessageDialog("This is not a valid profile!");
             return false;
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            new ErrorDialog("IOException whilst loading", e);
         }
-       
+        
         return true;
+    }
+    
+    public void goToDate(long date)
+    {
+        /* TODO
+        
+        long currentDate;
+        
+        try
+        {
+            //check if we're already going through history
+            if (historySeeker != null)
+            {
+                currentDate = SavePointerManager.readCurrentPointer(historySeeker)[0];
+            }*/
+        
     }
     
     public long goBack(GoalJList list, JTextArea todaysEntry)
     {
+        if (currentFile == null && !selectNewProfile()) return -1;
+        
         try
         {
+            if (currentFile == null)
+            {
+                if (!selectNewProfile()) return -1;
+                extractProfile(currentFile);
+
+                if (!list.loadGoalsFromFile(".goals")) return -1;
+            }
+            
+            long[] data;
             if (historySeeker == null)
             {
                 extractProfile(currentFile);
@@ -195,7 +220,56 @@ public class SaveFileManager
                 historySeeker.seek(pointers.length() - 1);
             }
             
-            long[] data = SavePointerManager.readPreviousPointer(historySeeker);
+            long ghpointer = SavePointerManager.readCurrentPointer(historySeeker)[2];
+            data = SavePointerManager.readPreviousPointer(historySeeker);
+                
+            RandomAccessFile raf = new RandomAccessFile(".notes", "r");
+            raf.seek(data[1]);
+            todaysEntry.setText(readString(raf));
+            raf.close();
+            
+            raf = new RandomAccessFile(".ghistory", "r");
+            raf.seek(ghpointer);
+            list.updateFromEditString(readString(raf), true);
+            raf.close();
+            
+            return data[0];
+        }
+        catch (FileNotFoundException e)
+        {
+            ErrorDialog.ErrorMessageDialog("This is not a valid profile!");
+            return -1;
+        }
+        catch (Exception e)
+        {
+            new ErrorDialog("Exception whilst going backwards", e);
+        }
+        return -1;
+    }
+    
+    public long goForward(GoalJList list, JTextArea todaysEntry)
+    {
+        try
+        {
+            if (currentFile == null)
+            {
+                if (!selectNewProfile()) return -1;
+                extractProfile(currentFile);
+
+                if (!list.loadGoalsFromFile(".goals")) return -1;
+            }
+        
+            
+            if (historySeeker == null) return -1; //at the end
+            
+            long[] data;
+            if (SavePointerManager.readCurrentPointer(historySeeker)[0] == 
+                    (data = SavePointerManager.readNextPointer(historySeeker))[0]) //also at the end
+            {
+                historySeeker.close();
+                historySeeker = null;
+                return -1;
+            }
                 
             RandomAccessFile raf = new RandomAccessFile(".notes", "r");
             raf.seek(data[1]);
@@ -204,26 +278,22 @@ public class SaveFileManager
             
             raf = new RandomAccessFile(".ghistory", "r");
             raf.seek(data[2]);
-            list.loadEditsFromString(readString(raf));
+            list.updateFromEditString(readString(raf), false);
             raf.close();
             
             return data[0];
         }
         catch (FileNotFoundException e)
         {
-            JOptionPane.showMessageDialog(null,
-                "This is not a valid profile.",
-                "Invalid Profile",
-                JOptionPane.ERROR_MESSAGE);
+            ErrorDialog.ErrorMessageDialog("This is not a valid profile!");
             return -1;
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            new ErrorDialog("Exception whilst going forwards", e);
         }
         return -1;
     }
-    
     private String readString(RandomAccessFile raf) throws IOException
     {
         String value = "";
@@ -283,14 +353,12 @@ public class SaveFileManager
         }
         catch (FileNotFoundException e)
         {
-            System.err.println("Profile disappeared...");
-            e.printStackTrace();
+            new ErrorDialog("Profile disappeared whilst loading", e);
             return false;
         }
         catch (IOException e)
         {
-            System.err.println("IOException reading files...");
-            e.printStackTrace();
+            new ErrorDialog("IOException whilst extracting profile", e);
             return false;
         }
         return true;
@@ -312,8 +380,7 @@ public class SaveFileManager
                 }
                 catch (IOException e)
                 {
-                    System.err.println("IOException creating a new profile...");
-                    e.printStackTrace();
+                    new ErrorDialog("Exception while creating profile", e);
                     return false;
                 }
             }
@@ -358,7 +425,7 @@ public class SaveFileManager
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            new ErrorDialog("Exception while zipping profile", e);
             return false;
         }
         return true;
@@ -386,5 +453,4 @@ public class SaveFileManager
         new File(".notes").createNewFile();
         new File(".ghistory").createNewFile();
     }
-    
 }

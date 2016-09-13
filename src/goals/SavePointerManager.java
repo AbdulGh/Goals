@@ -33,4 +33,20 @@ public class SavePointerManager
         raf.seek(pointer - 1);
         return readCurrentPointer(raf);
     }
+    
+    public static long[] readNextPointer(RandomAccessFile raf) throws IOException
+    {
+        int c;
+        while ((c = raf.read()) != recordsep)
+        {
+            if (c == -1) return readCurrentPointer(raf); //eof
+        }
+        
+        long[] data = new long[3];
+        data[0] = raf.readInt();
+        data[1] = raf.readLong();
+        data[2] = raf.readLong();
+        return data;
+        
+    }
 }

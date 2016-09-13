@@ -34,8 +34,8 @@ public class GoalsWindow extends JFrame
            @Override
            public void windowClosing(WindowEvent e)
            {
-               if (JOptionPane.showConfirmDialog(null, "Would you like to save?", "Save", JOptionPane.YES_NO_OPTION)
-                       == JOptionPane.YES_OPTION) sfm.save(list, todaysEntry.getText());
+               //if (JOptionPane.showConfirmDialog(null, "Would you like to save?", "Save", JOptionPane.YES_NO_OPTION)
+               //        == JOptionPane.YES_OPTION) sfm.save(list, todaysEntry.getText());
                dispose();
                System.exit(0);
            }
@@ -109,21 +109,10 @@ public class GoalsWindow extends JFrame
         {
            public void actionPerformed(ActionEvent e)
            {
-                String dateString = JOptionPane.showInputDialog(GoalsWindow.this, 
-                        "Go to which date? dd/mm/yyyy", new ShortDate().toString());
-                if (dateString != null)
-                {
-                    try
-                    {
-                        goToDate(new ShortDate(dateString));
-                    }
-                    catch (ParseException ex)
-                    {
-                        JOptionPane.showMessageDialog(GoalsWindow.this, 
-                                "Please enter a date in the form dd/mm/yyyy!", 
-                                "Misformed date", JOptionPane.ERROR_MESSAGE);
-                    }
-                }
+                DateJPanel dp = new DateJPanel(); 
+                int result = JOptionPane.showConfirmDialog(GoalsWindow.this, dp,
+                       "Enter date", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                if (result == JOptionPane.OK_OPTION) sfm.goToDate(dp.getValue().getDays());
            }
         });
         goTo.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_G,
@@ -135,7 +124,12 @@ public class GoalsWindow extends JFrame
         {
            public void actionPerformed(ActionEvent e)
            {
-                //TODO
+                int result = (int)sfm.goBack(list, todaysEntry);
+                if (result != -1)
+                {
+                    date = new ShortDate(result);
+                    refreshUI();
+                }
            }
         });
         back.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B,
@@ -147,7 +141,12 @@ public class GoalsWindow extends JFrame
         {
            public void actionPerformed(ActionEvent e)
            {
-                //TODO
+                int result = (int)sfm.goForward(list, todaysEntry);
+                if (result != -1)
+                {
+                    date = new ShortDate(result);
+                    refreshUI();
+                }
            }
         });
         fwd.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F,
@@ -248,8 +247,6 @@ public class GoalsWindow extends JFrame
             BorderFactory.createTitledBorder(
                 new LineBorder(Color.GRAY),
                 "Notes for " + date +":"));
-        
-        list.refresh();
         
         todaysEntry.setEditable(date.equals(new ShortDate()));
     }

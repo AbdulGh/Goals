@@ -26,17 +26,27 @@ public class Goal implements Comparable
         this.expires = expires;
     }
     
+    public Goal(Goal g)
+    {
+        this.name = g.name.replaceAll("[\030\031]", "");
+        this.details = g.details.replaceAll("[\030\031]", "");
+        this.set = g.set;
+        this.expires = g.expires;
+    }
+    
     public boolean read(Reader in) throws IOException, EOFException
     {
         int readValue = in.read();
-        if (readValue == -1 || readValue == recordsep) return false;
-        if (readValue == unitsep) name = "";
+        if (readValue <= 0 || readValue == recordsep) 
+        {
+            return false;
+        }
+        else if (readValue == unitsep) name = "";
         else
         {
             name = Character.toString((char)readValue);
             while ((readValue = in.read()) != unitsep) name += (char)readValue;
-        }
-        
+        }  
         
         details = "";
         while ((readValue = in.read()) != unitsep) details += (char)readValue;
@@ -97,9 +107,13 @@ public class Goal implements Comparable
         else
         {
             if (expires.inRange(new ShortDate(), 1))
+            {
                 output += "<font color='red'>" + expires + "</font>";
+            }
             else
+            {
                 output += expires;
+            }
         }
         
         output += "<br/>" + details + "</html>";
